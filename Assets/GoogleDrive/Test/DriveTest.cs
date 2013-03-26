@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -12,6 +13,12 @@ class DriveTest : MonoBehaviour
 	void Start()
 	{
 		Debug.LogWarning("Start()");
+
+		string json = @"{""hello"":""world"",""one"":1}";
+		JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader();
+		var ret = reader.Read<Dictionary<string, object>>(json);
+		//Debug.Log(ret["hello"]);
+		//Debug.Log(ret["one"]);
 	}
 
 	void Update()

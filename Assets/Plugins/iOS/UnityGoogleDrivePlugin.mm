@@ -9,7 +9,7 @@
 #import "UnityGoogleDrivePlugin.h"
 #import "GTMOAuth2ViewControllerTouch.h"
 
-static NSString *const kKeychainItemName = @"Unity Google Drive Plugin";
+static NSString *const kKeychainItemName = @"Unity Google Drive Plugin XX";
 static NSString *const kClientID = @"897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
 static NSString *const kClientSecret = @"tGNLbYnrdRO2hdFmwJAo5Fbt";
 
@@ -56,6 +56,8 @@ static UnityGoogleDrivePlugin* g_instance = nil;
     return self;
 }
 
+static GTMOAuth2ViewControllerTouch* g_authController = nil;
+
 - (void)auth
 {
     NSLog(@"----> 5");
@@ -99,12 +101,11 @@ static UnityGoogleDrivePlugin* g_instance = nil;
                       delegate:self
                       finishedSelector:@selector(viewController:finishedWithAuth:error:)];
     
+    g_authController = authController;
+    
     NSLog(@"----> 6");
     
     UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-    
-    NSLog(@"%@", vc);
-    
     [vc presentModalViewController:authController animated:YES];
     
     NSLog(@"----> 7");
@@ -117,6 +118,14 @@ static UnityGoogleDrivePlugin* g_instance = nil;
                  error:(NSError *)error
 {
     NSLog(@"----> 8 %@", error);
+    
+    if (g_authController != nil)
+    {
+        UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [vc dismissModalViewControllerAnimated:YES];
+        
+        g_authController = nil;
+    }
     
     if (error != nil)
     {

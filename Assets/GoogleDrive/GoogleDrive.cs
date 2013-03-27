@@ -12,6 +12,7 @@ class GoogleDrive : Midworld.UnityCoroutine
 
 	public GoogleDrive()
 	{
+#if UNITY_ANDROID
 		using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin"))
 		{
 			if (!activitySet)
@@ -38,10 +39,12 @@ class GoogleDrive : Midworld.UnityCoroutine
 
 			pluginClass.Dispose();
 		}
+#endif
 	}
 
 	void OnComplete()
 	{
+#if UNITY_ANDROID
 		using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin"))
 		{
 			string error = pluginClass.CallStatic<string>("getError", new object[] { id });
@@ -75,6 +78,7 @@ class GoogleDrive : Midworld.UnityCoroutine
 		}
 
 		isDone = true;
+#endif
 	}
 
 	void OnAuthSuccess()

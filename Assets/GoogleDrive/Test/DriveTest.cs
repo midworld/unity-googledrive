@@ -15,10 +15,10 @@ class DriveTest : MonoBehaviour
 		Debug.LogWarning("Start()");
 
 		string json = @"{""hello"":""world"",""one"":1}";
-		JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader();
-		var ret = reader.Read<Dictionary<string, object>>(json);
-		//Debug.Log(ret["hello"]);
-		//Debug.Log(ret["one"]);
+		JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(json);
+		var ret = reader.Deserialize<Dictionary<string, object>>();
+		Debug.Log(ret["hello"]);
+		Debug.Log(ret["one"]);
 	}
 
 	void Update()

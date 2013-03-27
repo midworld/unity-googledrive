@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 class DriveTest : MonoBehaviour
@@ -53,11 +54,20 @@ class DriveTest : MonoBehaviour
 		wait = false;
 	}
 
+#if UNITY_IPHONE
+	[DllImport ("__Internal")]
+	static extern void Auth();
+#endif
+	
 	void OnGUI()
 	{
 		if (!wait && GUI.Button(new Rect(10, 10, 300, 100), "Get List"))
 		{
+#if UNITY_ANDROID
 			StartCoroutine(GetList());
+#elif UNITY_IPHONE
+			Auth();
+#endif
 		}
 
 //        if (GUI.Button(new Rect(10, 10, 300, 100), "Auth"))

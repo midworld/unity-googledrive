@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "GTLDrive.h"
 
-@interface UnityGoogleDrivePlugin : UIViewController
+@interface UnityGoogleDrivePlugin : NSObject
 
 @property (nonatomic, retain) GTLServiceDrive *driveService;
 

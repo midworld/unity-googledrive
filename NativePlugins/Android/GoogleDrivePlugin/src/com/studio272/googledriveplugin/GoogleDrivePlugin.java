@@ -8,6 +8,7 @@ import java.util.List;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
@@ -127,21 +128,36 @@ public class GoogleDrivePlugin {
 				
 				try {
 					Files.List request = service.files().list();
+					request.setMaxResults(50);
+					
+					StringBuilder sb = new StringBuilder();
 					
 					do {
-						FileList files = request.execute();
+						try {
+							FileList files = request.execute();
+								
+							result.addAll(files.getItems());
+							request.setPageToken(files.getNextPageToken());
 							
-						result.addAll(files.getItems());
-						request.setPageToken(files.getNextPageToken());
+							Log.d(TAG, "got results! " + files.toString());
+							
+							sb.append(files.toString());
+							sb.append('\n');
+						} catch (GoogleJsonResponseException e) {
+							Log.d(TAG, "error: " + e);
+						}
 					} while (request.getPageToken() != null &&
 							request.getPageToken().length() > 0);
 					
 					String[] array = new String[result.size()];
 					
-					for (int i = 0; i < result.size(); i++) {
+					/*for (int i = 0; i < result.size(); i++) {
 						com.google.api.services.drive.model.File file = result.get(i);
 						array[i] = file.getTitle();
-					}
+					}*/
+					
+					array = new String[1];
+					array[0] = sb.toString();
 					
 					Log.d(TAG, "list() length: " + array.length);
 					

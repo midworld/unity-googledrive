@@ -10,6 +10,9 @@ class GoogleDrive : Midworld.UnityCoroutine
 
 	int id = -1;
 
+	public string jsonString = null;
+	public string error = null;
+
 	public GoogleDrive()
 	{
 #if UNITY_ANDROID
@@ -57,6 +60,8 @@ class GoogleDrive : Midworld.UnityCoroutine
 				{
 					Debug.Log(ret[i]);
 				}
+
+				jsonString = ret[0];
 			}
 			else
 			{
@@ -72,6 +77,8 @@ class GoogleDrive : Midworld.UnityCoroutine
 					case "Exception":
 						break;
 				}
+
+				this.error = error;
 			}
 
 			pluginClass.Dispose();

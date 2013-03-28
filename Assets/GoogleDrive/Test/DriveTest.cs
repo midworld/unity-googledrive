@@ -9,17 +9,22 @@ class DriveTest : MonoBehaviour
 {
 	public Transform cube = null;
 
+	string message = "";
+
 	//float elapsedTime = 0;
 
 	void Start()
 	{
 		Debug.LogWarning("Start()");
 
-		string json = @"{""hello"":""world"",""one"":1}";
-		JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(json);
-		var ret = reader.Deserialize<Dictionary<string, object>>();
-		Debug.Log(ret["hello"]);
-		Debug.Log(ret["one"]);
+		//string json = @"{""hello"":""world"",""one"":1,""array"":[1,2,""hello""],""obj"":{""a"":""b""}}";
+		//JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(json);
+		//var ret = reader.Deserialize<Dictionary<string, object>>();
+		//Debug.Log(ret["hello"]);
+		//Debug.Log(ret["one"]);
+		//Debug.Log(ret["array"]);
+		//Debug.Log((ret["array"] as object[])[0]);
+		//Debug.Log(ret["obj"]);
 	}
 
 	void Update()
@@ -49,9 +54,42 @@ class DriveTest : MonoBehaviour
 	{
 		wait = true;
 
-		yield return StartCoroutine(new GoogleDrive());
+		GoogleDrive drive;
+
+		yield return StartCoroutine(drive = new GoogleDrive());
 
 		wait = false;
+
+		if (drive.error != null)
+			message = drive.error;
+		else
+		{
+			message = "";
+
+			string[] json = drive.jsonString.Split('\n');
+			Debug.Log("json \\n count: " + json.Length);
+			message += "json \\n count: " + json.Length + "\n";
+
+			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(json[0]);
+			var list = reader.Deserialize<Dictionary<string, object>>();
+			object[] items = list["items"] as object[];
+			if (items != null)
+			{
+				Debug.Log("items count: " + items.Length);
+				message += "items count: " + items.Length + "\n";
+
+				for (int i = 0; i < items.Length; i++)
+				{
+					var file = items[i] as Dictionary<string, object>;
+
+					if (file != null)
+					{
+						Debug.Log(string.Format("[{0}] {1}\n", i, file["title"]));
+						message += string.Format("[{0}] {1}\n", i, file["title"]);
+					}
+				}
+			}
+		}
 	}
 
 #if UNITY_IPHONE
@@ -128,6 +166,8 @@ class DriveTest : MonoBehaviour
 		{
 			screenshot = true;
 		}
+
+		GUI.Label(new Rect(0, 0, Screen.width, Screen.height), message);
 	}
 
 	bool screenshot = false;

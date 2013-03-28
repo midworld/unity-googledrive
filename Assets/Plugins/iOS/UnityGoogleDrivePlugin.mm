@@ -109,7 +109,6 @@ static UnityGoogleDrivePlugin* g_instance = nil;
     [viewController release];
     [navController pushViewController:authController animated:NO];
     [authController release];
-    [navController popViewControllerAnimated:NO];
     
     [vc presentModalViewController:navController animated:YES];
     

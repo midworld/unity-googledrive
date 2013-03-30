@@ -54,9 +54,9 @@ class DriveTest : MonoBehaviour
 	{
 		wait = true;
 
-		GoogleDrive drive;
+		GoogleDrive1 drive;
 
-		yield return StartCoroutine(drive = new GoogleDrive());
+		yield return StartCoroutine(drive = new GoogleDrive1());
 
 		wait = false;
 

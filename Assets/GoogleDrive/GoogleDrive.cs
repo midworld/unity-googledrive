@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
-class GoogleDrive : Midworld.UnityCoroutine
+class GoogleDrive1 : Midworld.UnityCoroutine
 {
 	static bool activitySet = false;
 
@@ -13,7 +13,7 @@ class GoogleDrive : Midworld.UnityCoroutine
 	public string jsonString = null;
 	public string error = null;
 
-	public GoogleDrive()
+	public GoogleDrive1()
 	{
 #if UNITY_ANDROID
 		using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin"))
@@ -31,14 +31,12 @@ class GoogleDrive : Midworld.UnityCoroutine
 				activitySet = true;
 			}
 
-			pluginClass.CallStatic("setAuthRejectionCallback", new object[] { (AndroidJavaRunnable)OnAuthRejection });
-
 			pluginClass.CallStatic("auth", new object[] { 
 				(AndroidJavaRunnable)OnAuthSuccess, (AndroidJavaRunnable)OnAuthFailure } );
 
 			AndroidJavaRunnable callback = OnComplete;
 
-			id = pluginClass.CallStatic<int>("list", new object[] { callback });
+			//id = pluginClass.CallStatic<int>("list", new object[] { callback });
 
 			pluginClass.Dispose();
 		}
@@ -96,10 +94,5 @@ class GoogleDrive : Midworld.UnityCoroutine
 	void OnAuthFailure()
 	{
 		Debug.Log("OnAuthFailure");
-	}
-
-	void OnAuthRejection()
-	{
-		Debug.LogError("OnAuthRejection");
 	}
 }

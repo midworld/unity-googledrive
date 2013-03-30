@@ -9,7 +9,7 @@
 #import "UnityGoogleDrivePlugin.h"
 #import "GTMOAuth2ViewControllerTouch.h"
 
-static NSString *const kKeychainItemName = @"Unity Google Drive Plugin Y";
+static NSString *const kKeychainItemName = @"Unity Google Drive Plugin";
 static NSString *const kClientID = @"897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
 static NSString *const kClientSecret = @"tGNLbYnrdRO2hdFmwJAo5Fbt";
 
@@ -56,6 +56,39 @@ static UnityGoogleDrivePlugin* g_instance = nil;
     return self;
 }
 
+- (void)serviceTicket:(GTLServiceTicket*)ticket
+   finishedWithObject:(GTLDriveFileList*)files
+                error:(NSError*)error
+{
+    if (error == nil)
+    {
+        NSLog(@"files: %@", files);
+        
+        for (int i = 0; i < files.items.count; i++)
+        {
+            NSLog(@"[%d] %@", i, [files.items objectAtIndex:i]);
+        }
+        
+        if (files.nextPageToken)
+        {
+            GTLQueryDrive* nextQuery = ticket.originalQuery;
+            nextQuery.pageToken = files.nextPageToken;
+            [driveService executeQuery:nextQuery delegate:self didFinishSelector:@selector(serviceTicket:finishedWithObject:error:)];
+        }
+    }
+    else
+    {
+        NSLog(@"File List Error: %@", error);
+        
+        // retry
+        if (error.code == 500 &&
+            [error.domain isEqualToString:@"com.google.GTLJSONRPCErrorDomain"] == YES)
+        {
+            [driveService executeQuery:ticket.originalQuery delegate:self didFinishSelector:@selector(serviceTicket:finishedWithObject:error:)];
+        }
+    }
+}
+
 - (void)auth
 {
     NSLog(@"----> 5");
@@ -66,7 +99,11 @@ static UnityGoogleDrivePlugin* g_instance = nil;
         {
             NSLog(@"GTLQueryDrive queryForFilesList");
             
-            driveService.shouldFetchNextPages = YES;
+            GTLQueryDrive* query = [GTLQueryDrive queryForFilesList];
+            query.maxResults = 50;
+            [driveService executeQuery:query delegate:self didFinishSelector:@selector(serviceTicket:finishedWithObject:error:)];
+            
+            /*driveService.shouldFetchNextPages = YES;
             
             GTLQueryDrive* query = [GTLQueryDrive queryForFilesList];
             GTLServiceTicket* queryTicket =
@@ -84,7 +121,7 @@ static UnityGoogleDrivePlugin* g_instance = nil;
                          } else {
                              NSLog(@"File List Error: %@", error);
                          }
-                     }];
+                     }];*/
         }
         
         return;
@@ -117,9 +154,9 @@ static UnityGoogleDrivePlugin* g_instance = nil;
 
 // Handle completion of the authorization process, and updates the Drive service
 // with the new credentials.
-- (void)viewController:(GTMOAuth2ViewControllerTouch *)viewController
-      finishedWithAuth:(GTMOAuth2Authentication *)authResult
-                 error:(NSError *)error
+- (void)viewController:(GTMOAuth2ViewControllerTouch*)viewController
+      finishedWithAuth:(GTMOAuth2Authentication*)authResult
+                 error:(NSError*)error
 {
     NSLog(@"----> 8 %@", error);
     
@@ -135,6 +172,29 @@ static UnityGoogleDrivePlugin* g_instance = nil;
     else
     {
         self.driveService.authorizer = authResult;
+        
+        NSLog(@" ----> GO");
+        
+        // get file list test ----
+        driveService.shouldFetchNextPages = YES;
+        GTLQueryDrive* query = [GTLQueryDrive queryForFilesList];
+        GTLServiceTicket* queryTicket =
+            [driveService executeQuery:query completionHandler:^(GTLServiceTicket* ticket, GTLDriveFileList* files, NSError* error) {
+                
+                NSLog(@"files: %@ error: %@", files, error);
+                
+                if (error != nil)
+                {
+                    for (int i = 0; i < files.items.count; i++)
+                    {
+                        NSLog(@"file %d: %@", i, [files.items objectAtIndex:i]);
+                    }
+                }
+                else
+                {
+                    NSLog(@"error: %@", error);
+                }
+            }];
     }
 }
 

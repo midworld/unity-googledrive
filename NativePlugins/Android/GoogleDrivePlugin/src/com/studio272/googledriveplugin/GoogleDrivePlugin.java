@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.android.gms.auth.GoogleAuthException;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
@@ -42,18 +44,13 @@ public class GoogleDrivePlugin {
 		activity = unityActivity;
 	}
 	
-	static Runnable authRejectionCallback = null;
-	
-	public static void setAuthRejectionCallback(Runnable callback) {
-		Log.d(TAG, "setAuthRejectionCallback: " + callback);
-		
-		authRejectionCallback = callback;
-	}
-	
 	static Runnable authSuccessCallback = null;
 	static Runnable authFailureCallback = null;
 	
 	public static void auth(Runnable success, Runnable failure) {
+		authSuccessCallback = success;
+		authFailureCallback = failure;
+
 		SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
 		String accountName = prefs.getString("accountName", null);
 		
@@ -70,11 +67,8 @@ public class GoogleDrivePlugin {
 			
 			Log.d(TAG, "google drive service: " + service);
 			
-			activity.runOnUiThread(success);
+			checkAuthorized();
 		} catch (Exception e) {
-			authSuccessCallback = success;
-			authFailureCallback = failure;
-			
 			pickAccount();
 		}
 	}
@@ -195,38 +189,46 @@ public class GoogleDrivePlugin {
 			if (resultCode == Activity.RESULT_OK && data != null && data.getExtras() != null) {
 				String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 				if (accountName != null) {
-					SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
-					prefs.edit().putString("accountName", accountName).commit();
-					
 					Log.d(TAG, "selected accountName: " + accountName);
+					
+					SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
+					prefs.edit().putString("accountName", credential.getSelectedAccountName()).commit();
 					
 					credential.setSelectedAccountName(accountName);
 					service = getDriveService(credential);
 					
-					Log.d(TAG, "google drive service: " + service);
+					checkAuthorized();
 					
 					success = true;
-					
-					if (authSuccessCallback != null) {
-						authSuccessCallback.run();
-					}
 				}
 			}
 			
 			if (!success && authFailureCallback != null) {
 				authFailureCallback.run();
+				
+				authSuccessCallback = null;
+				authFailureCallback = null;
 			}
-			
-			authSuccessCallback = null;
-			authFailureCallback = null;
 			break;
 		case REQUEST_AUTHORIZATION:
 			if (resultCode == Activity.RESULT_OK) {
-				// do something such as uploading
-				//list();
+				// accepted
+				Log.d(TAG, "Authorization accepted with " + credential.getSelectedAccountName());
+				
+				if (authSuccessCallback != null) {
+					authSuccessCallback.run();
+					authSuccessCallback = null;
+					authFailureCallback = null;
+				}
 			} else {
-				// 권환 요청에서 취소한 경우임! 고치자
-				//pickAccount();
+				// rejected
+				clearSelectedAccountName();
+				
+				if (authFailureCallback != null) {
+					authFailureCallback.run();
+					authSuccessCallback = null;
+					authFailureCallback = null;
+				}
 			}
 			break;
 		}
@@ -244,6 +246,8 @@ public class GoogleDrivePlugin {
 	}
 	
 	private static void authorization(Intent newIntent) {
+		Log.d(TAG, newIntent.toString());
+		
 		requests.append(REQUEST_AUTHORIZATION, newIntent);
 		
 		Intent intent = new Intent(activity, GoogleDrivePluginActivity.class);
@@ -257,6 +261,48 @@ public class GoogleDrivePlugin {
 	private static Drive getDriveService(GoogleAccountCredential credential) {
 		return new Drive.Builder(AndroidHttp.newCompatibleTransport(), new GsonFactory(), credential)
 				.build();
+	}
+	
+	private static void checkAuthorized() {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					// authorization test
+					credential.getToken();
+					
+					Log.d(TAG, "Authorization success!");
+				
+					if (authSuccessCallback != null) {
+						activity.runOnUiThread(authSuccessCallback);
+						authSuccessCallback = null;
+						authFailureCallback = null;
+					}
+				} catch (final UserRecoverableAuthException e) {
+					activity.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							authorization(e.getIntent());
+						}
+					});
+				} catch (final UserRecoverableAuthIOException e) {
+					activity.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							authorization(e.getIntent());
+						}
+					});
+				} catch (Exception e) {
+					Log.e(TAG, "checkAuthorized: " + e.toString());
+					
+					if (authFailureCallback != null) {
+						activity.runOnUiThread(authFailureCallback);
+						authSuccessCallback = null;
+						authFailureCallback = null;
+					}
+				} 
+			}
+		}).start();
 	}
 	
 	// -------------------------------

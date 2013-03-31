@@ -2,28 +2,246 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Net;
+using System.IO;
 
 class DriveTest2 : MonoBehaviour
 {
+	public Font font = null;
 	public Transform cube = null;
 
+	bool fontSet = false;
+
 	void Start()
-	{	
+	{
+		files = new List<GoogleDrive.Files.File>();
 	}
 
-	bool list = false;
+	bool tasking = false;
+
+	IEnumerator Auth()
+	{
+		tasking = true;
+
+		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
+
+		yield return StartCoroutine(GoogleDrive.Auth.Authorize());
+
+		if (GoogleDrive.Auth.isAuthorized)
+		{
+			Debug.Log("Authorization success(" + GoogleDrive.Auth.selectedAccountName + ").");
+		}
+		else
+		{
+			Debug.Log("Authorization failure.");
+		}
+
+		tasking = false;
+	}
+
+	List<GoogleDrive.Files.File> files = null;
+	Dictionary<string, Texture2D> iconTable = new Dictionary<string, Texture2D>();
+
+	void UpdateList(GoogleDrive.Files.List list)
+	{
+		files = list.items;
+
+		for (int i = 0; i < files.Count; i++)
+		{
+			if (files[i].iconLink == null)
+				continue;
+
+			if (!iconTable.ContainsKey(files[i].iconLink))
+			{
+				iconTable.Add(files[i].iconLink, null);
+				StartCoroutine(DownloadIcon(files[i].iconLink));
+			}
+		}
+	}
 
 	IEnumerator List(int maxResults = -1)
 	{
-		GoogleDrive.Files.List ticket = 
-			new GoogleDrive.Files.List(maxResults);
+		tasking = true;
 
-		StartCoroutine(ticket);
+		do
+		{
+			GoogleDrive.Files.List list = new GoogleDrive.Files.List(maxResults);
 
-		while (!ticket.isDone)
+			if (maxResults == -1)
+			{
+				yield return StartCoroutine(list);
+			}
+			else
+			{
+				while (!list.isDone)
+				{
+					UpdateList(list);
+
+					yield return null;
+				}
+			}
+
+			if (list.error is GoogleDrive.AuthException)
+			{
+				yield return StartCoroutine(Auth());
+
+				if (GoogleDrive.Auth.isAuthorized)
+					continue;
+			}
+			else
+			{
+				UpdateList(list);
+			}
+		} while (false);
+
+		tasking = false;
+	}
+
+	IEnumerator DownloadIcon(string link)
+	{
+		WWW www = new WWW(link);
+
+		yield return www;
+
+		if (www.error == null)
+			iconTable[link] = www.texture;
+		else
+			Debug.LogError(www.error);
+	}
+
+	Texture2D thumbnail = null;
+
+	IEnumerator DownloadImage(string url)
+	{
+		tasking = true;
+
+		/*WWW www = new WWW(url);
+
+		yield return www;
+
+		if (www.error == null)
+			thumbnail = www.texture;
+		else
+			Debug.LogError(www.error);*/
+
+		Midworld.UnityWWW.Request request = new Midworld.UnityWWW.Request(url);
+		request.headers.Add("Authorization", "Bearer " + GoogleDrive.Auth.token);
+
+		Midworld.UnityWWW www = new Midworld.UnityWWW(request);
+		yield return StartCoroutine(www);
+
+		if (www.error == null)
+		{
+			string headers = "";
+
+			foreach (KeyValuePair<string, string> kv in www.response.headers)
+			{
+				headers += kv.Key + " : " + kv.Value + "\n";
+			}
+
+			Debug.Log(headers);
+
+			thumbnail = new Texture2D(0, 0);
+			thumbnail.LoadImage(www.response.bytes);
+		}
+		else
+		{
+			Debug.LogError(www.error);
+		}
+
+		/*HTTP.Request req = new HTTP.Request("GET", url);
+		req.AddHeader("Authorization", "Bearer " + GoogleDrive.Auth.token);
+		req.Send();
+		while (!req.isDone && req.exception == null)
 		{
 			yield return null;
 		}
+
+		try
+		{
+			if (req.exception == null)
+			{
+				HTTP.Response res = req.response;
+
+				thumbnail = new Texture2D(0, 0);
+				thumbnail.LoadImage(res.bytes);
+			}
+		}
+		catch (Exception e)
+		{
+			Debug.LogError(e);
+		}*/
+
+		tasking = false;
+	}
+
+	IEnumerator UnityWWWTest()
+	{
+		tasking = true;
+
+		Midworld.UnityWWW www = 
+			new Midworld.UnityWWW("https://ssl.gstatic.com/docs/doclist/images/icon_11_document_list.png");
+			//new Midworld.UnityWWW("http://google.com");
+		yield return StartCoroutine(www);
+
+		if (www.error != null)
+		{
+			Debug.LogError(www.error);
+		}
+		else
+		{
+			foreach (KeyValuePair<string, string> kv in www.response.headers)
+			{
+				Debug.Log(kv.Key + " : " + kv.Value);
+			}
+
+			Debug.Log(www.response.bytes.Length);
+			//Debug.Log(www.response.text);
+		}
+
+		tasking = false;
+	}
+
+	void Callback() { }
+
+	IEnumerator ListX(int maxResults = -1)
+	{
+		AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin");
+
+		string token = pluginClass.CallStatic<string>("getAuthToken");
+		Debug.LogWarning("token: " + (token != null ? token : "null"));
+
+		//pluginClass.CallStatic<int>("list", new object[] { (AndroidJavaRunnable)Callback });
+		pluginClass.Dispose();
+
+		yield return null;
+
+		token = "ya29.AHES6ZT0vzbJe7wmy6lfoUQ9pqiqvAQy2FufWvhFMK9MB66wFA";
+
+		string url = "https://www.googleapis.com/drive/v2/files?maxResults=3&key=AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
+
+		HTTP.Request req = new HTTP.Request("GET", url);
+		req.AddHeader("Authorization", "Bearer " + token);
+		req.Send();
+		while (!req.isDone)
+		{
+			yield return null;
+		}
+
+		HTTP.Response res = req.response;
+		Debug.Log(res.Text);
+
+		//yield return null;
+
+		//GoogleDrive.Files.List ticket = 
+		//    new GoogleDrive.Files.List(maxResults);
+
+		//StartCoroutine(ticket);
+
+		//while (!ticket.isDone)
+		//{
+		//    yield return null;
+		//}
 	}
 
 	void Update()
@@ -39,18 +257,130 @@ class DriveTest2 : MonoBehaviour
 		}
 	}
 
+	int currentPage = 0;
+	const int ITEMS_PER_PAGE = 20;
+
 	void OnGUI()
 	{
-		int y = 0;
-
-		if (!list && GUI.Button(new Rect(10, 10 + 110 * y++, 300, 100), "List"))
+		if (!fontSet)
 		{
-			StartCoroutine(List());
+			fontSet = true;
+
+			GUI.skin.label.font = font;
+			GUI.skin.button.font = font;
 		}
 
-		if (!list && GUI.Button(new Rect(10, 10 + 110 * y++, 300, 100), "List (20)"))
+		if (tasking)
 		{
-			StartCoroutine(List(20));
+			string waitString = "Wait a second";
+			
+			for (int i = 0; i < ((int)(Time.timeSinceLevelLoad * 2)) % 4; i++)
+			{
+				waitString += ".";
+			}
+
+			GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+			GUI.Label(new Rect(0, 0, Screen.width, Screen.height), waitString);
+			GUI.skin.label.alignment = TextAnchor.MiddleLeft;
+
+			GUI.enabled = false;
+		}
+
+		if (thumbnail != null)
+		{
+			GUI.enabled = false;
+		}
+
+		GUI.BeginGroup(new Rect(0, 0, Screen.width, Screen.height - 100));
+		{
+			if (files != null)
+			{
+				if (GUI.Button(new Rect(10, 10, 40, 40), "<<"))
+				{
+					currentPage = Mathf.Max(0, currentPage - 1);
+				}
+
+				GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+				
+				int totalPage = files.Count / ITEMS_PER_PAGE + (files.Count % ITEMS_PER_PAGE > 0 ? 1 : 0);
+				if (currentPage >= totalPage)
+					currentPage = Mathf.Max(0, totalPage - 1);
+
+				GUI.Label(new Rect(10, 10, Screen.width - 20, 40), (currentPage + 1) + " / " + Mathf.Max(1, totalPage));
+				
+				GUI.skin.label.alignment = TextAnchor.MiddleLeft;
+
+				if (GUI.Button(new Rect(Screen.width - 50, 10, 40, 40), ">>"))
+				{
+					currentPage = Mathf.Min(totalPage - 1, currentPage + 1);
+				}
+
+				GUI.skin.button.padding.left = 34;
+				GUI.skin.button.alignment = TextAnchor.MiddleLeft;
+
+				for (int i = 0; i < ITEMS_PER_PAGE; i++)
+				{
+					int index = currentPage * ITEMS_PER_PAGE + i;
+					
+					if (files.Count <= index)
+						break;
+
+					if (GUI.Button(new Rect(10, 60 + 1 + i * 32, Screen.width - 20, 30), files[index].title))
+					{
+						// ...
+
+						if (files[index].thumbnailLink != null)
+						{
+							StartCoroutine(DownloadImage(files[index].thumbnailLink));
+						}
+					}
+					
+					if (files[index].iconLink != null &&
+						iconTable.ContainsKey(files[index].iconLink) &&
+						iconTable[files[index].iconLink] != null)
+					{
+						GUI.DrawTexture(new Rect(14, 60 + 4 + i * 32, 24, 24), iconTable[files[index].iconLink]);
+					}
+				}
+
+				GUI.skin.button.padding.left = 0;
+				GUI.skin.button.alignment = TextAnchor.MiddleCenter;
+			}
+		}
+		GUI.EndGroup();
+
+		GUI.BeginGroup(new Rect(0, Screen.height - 100, Screen.width, 100));
+		{
+			if (GUI.Button(new Rect(10, 10, 120, 80), "Auth"))
+			{
+				StartCoroutine(Auth());
+			}
+
+			if (GUI.Button(new Rect(140, 10, 120, 80), "List"))
+			{
+				StartCoroutine(List());
+			}
+
+			if (GUI.Button(new Rect(270, 10, 120, 80), "List (20)"))
+			{
+				StartCoroutine(List(20));
+			}
+
+			if (GUI.Button(new Rect(400, 10, 120, 80), "UnityWWW Test"))
+			{
+				StartCoroutine(UnityWWWTest());
+			}
+		}
+		GUI.EndGroup();
+
+		if (thumbnail != null)
+		{
+			GUI.enabled = true;
+
+			if (GUI.Button(new Rect(0, 0, Screen.width, Screen.height), thumbnail))
+			{
+				thumbnail = null;
+			}
 		}
 	}
 }

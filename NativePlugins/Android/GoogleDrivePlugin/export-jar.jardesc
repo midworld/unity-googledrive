@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="MS949" standalone="no"?>
 <jardesc>
-    <jar path="GoogleDrivePluginSample/libs/googledriveplugin.jar"/>
+    <jar path="E:/Work/UnityGoogleDrive/trunk/Assets/Plugins/Android/googledriveplugin.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/GoogleDrivePlugin/export-jar.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>

@@ -43,14 +43,10 @@ public class GoogleDrivePluginActivity extends Activity {
 			GoogleDrivePlugin.requests.remove(requestCode);
 			startActivityForResult(newIntent, requestCode);
 		}
-		
-		Log.d(TAG, "requestCode: " + requestCode + " intent: " + newIntent);
 	}
 	
 	@Override
 	protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-		Log.d(TAG, "onActivityResult: " + requestCode + " resultCode: " + resultCode);
-		
 		GoogleDrivePlugin.onActivityResult(requestCode, resultCode, data, this);
 		
 		/*switch (requestCode) {
@@ -99,7 +95,7 @@ public class GoogleDrivePluginActivity extends Activity {
 					File body = new File();
 					body.setTitle(fileContent.getName());
 					body.setMimeType("image/png");
-
+					
 					File file = service.files().insert(body, mediaContent).execute();
 					if (file != null) {
 						showToast("Photo uploaded: " + file.getTitle());

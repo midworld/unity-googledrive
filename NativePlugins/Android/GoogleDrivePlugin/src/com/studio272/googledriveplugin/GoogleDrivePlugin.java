@@ -1,23 +1,24 @@
 package com.studio272.googledriveplugin;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequest;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.Drive.Files;
 import com.google.api.services.drive.model.FileList;
 
-import android.R.bool;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -42,6 +43,14 @@ public class GoogleDrivePlugin {
 		Log.d(TAG, "setUnityActivity: " + unityActivity);
 		
 		activity = unityActivity;
+	}
+	
+	static String apiKey = null;
+	
+	public static void setAPIKey(String key) {
+		Log.d(TAG, "setAPIKey: " + key);
+		
+		apiKey = key;
 	}
 	
 	static Runnable authSuccessCallback = null;
@@ -73,6 +82,19 @@ public class GoogleDrivePlugin {
 		}
 	}
 	
+	static String token = null;
+	
+	public static String getAuthToken() {
+		return token;
+	}
+	
+	public static String getSelectedAccountName() {
+		SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
+		String accountName = prefs.getString("accountName", null);
+		
+		return accountName;
+	}
+	
 	public static void clearSelectedAccountName() {
 		SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
 		if (prefs.contains("accountName")) {
@@ -80,99 +102,114 @@ public class GoogleDrivePlugin {
 		}
 	}
 	
-	static SparseArray<Object> results = new SparseArray<Object>();
+	static SparseArray<ArrayList<String>> results = new SparseArray<ArrayList<String>>();
 	static SparseArray<String> errors = new SparseArray<String>();
-	static int resultIndex = 0;
+	static HashSet<Integer> finished = new HashSet<Integer>(); 
+	static AtomicInteger resultIndex = new AtomicInteger();
 	
-	public static Object getResult(int index) {
-		Object result = results.get(index);
+	public static String[] getResult(int index) {
+		ArrayList<String> result = results.get(index);
+		String[] resultArray;
 		
-		Log.d(TAG, "getResult index: " + index + " result: " + result);
+		if (result == null)
+			return null;
 		
-		if (result != null) {
-			results.remove(index);
+		synchronized (result) {
+			resultArray = result.toArray(new String[]{});
+			result.clear();
 		}
 		
-		return result;
+		synchronized (finished) {
+			if (finished.contains(index)) {
+				result = null;
+				results.delete(index);
+			}
+		}
+		
+		return resultArray;
 	}
 	
 	public static String getError(int index) {
-		String error = errors.get(index);
-		
-		Log.d(TAG, "getError index: " + index + " error: " + error);
-		
-		if (error != null) {
-			errors.remove(index);
+		synchronized (errors) {
+			String error = errors.get(index);
+			
+			if (error != null) {
+				errors.delete(index);
+			}
+			
 			return error;
-		} else {
-			return "";
 		}
 	}
 	
-	public static int list(final Runnable callback) {
-		Log.d(TAG, "list() started...");
+	public static int list(final int maxResults, final Runnable progress, final Runnable complete) {
+		final int currentId = resultIndex.getAndIncrement();
+		final ArrayList<String> result = new ArrayList<String>();
+		results.put(currentId, result);
 		
-		final int currentId = resultIndex++;
-		
-		Thread thread = new Thread(new Runnable() {
+		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				List<com.google.api.services.drive.model.File> result = 
-						new ArrayList<com.google.api.services.drive.model.File>();
-				
 				try {
 					Files.List request = service.files().list();
-					request.setMaxResults(50);
-					
-					StringBuilder sb = new StringBuilder();
+					if (maxResults > 0)
+						request.setMaxResults(maxResults);
 					
 					do {
 						try {
 							FileList files = request.execute();
-								
-							result.addAll(files.getItems());
+							
+							synchronized (result) {
+								result.add(files.toString());
+							}
+							
+							activity.runOnUiThread(progress);
+							
 							request.setPageToken(files.getNextPageToken());
-							
-							Log.d(TAG, "got results! " + files.toString());
-							
-							sb.append(files.toString());
-							sb.append('\n');
+						} catch (UserRecoverableAuthIOException e) {
+							throw e;
 						} catch (GoogleJsonResponseException e) {
-							Log.d(TAG, "error: " + e);
+							// retry after 100msec
+							Thread.sleep(100);
 						}
 					} while (request.getPageToken() != null &&
 							request.getPageToken().length() > 0);
-					
-					String[] array = new String[result.size()];
-					
-					/*for (int i = 0; i < result.size(); i++) {
-						com.google.api.services.drive.model.File file = result.get(i);
-						array[i] = file.getTitle();
-					}*/
-					
-					array = new String[1];
-					array[0] = sb.toString();
-					
-					Log.d(TAG, "list() length: " + array.length);
-					
-					results.append(currentId, array);
 				} catch (UserRecoverableAuthIOException e) {
-					Log.d(TAG, "UserRecoverableAuthIOException: " + e);
+					//authorization(e.getIntent());
+					Log.w(TAG, e.getMessage(), e);
 					
-					authorization(e.getIntent());
-					
-					errors.append(currentId, "UserRecoverableAuthIOException: " + e);
+					synchronized (errors) {
+						errors.put(currentId, e.getClass().getName());
+					}
 				} catch (Exception e) {
-					Log.d(TAG, "Exception: " + e);
-					e.printStackTrace();
+					Log.e(TAG, e.getMessage(), e);
 					
-					errors.append(currentId, "Exception: " + e);
+					synchronized (errors) {
+						errors.put(currentId, e.getClass().getName());
+					}
+				} finally {
+					activity.runOnUiThread(complete);
+					
+					int remainingResult;
+					
+					synchronized (result) {
+						remainingResult = result.size();
+					}
+					
+					if (remainingResult > 0) {
+						synchronized (finished) {
+							finished.add(currentId);
+						}
+					} else {
+						activity.runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								results.delete(currentId);
+							}
+						});
+					}
 				}
-				
-				activity.runOnUiThread(callback);
 			}
-		});
-		thread.start();
+		}).start();
 		
 		return currentId;
 	}
@@ -192,7 +229,7 @@ public class GoogleDrivePlugin {
 					Log.d(TAG, "selected accountName: " + accountName);
 					
 					SharedPreferences prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
-					prefs.edit().putString("accountName", credential.getSelectedAccountName()).commit();
+					prefs.edit().putString("accountName", accountName).commit();
 					
 					credential.setSelectedAccountName(accountName);
 					service = getDriveService(credential);
@@ -269,7 +306,7 @@ public class GoogleDrivePlugin {
 			public void run() {
 				try {
 					// authorization test
-					credential.getToken();
+					token = credential.getToken();
 					
 					Log.d(TAG, "Authorization success!");
 				

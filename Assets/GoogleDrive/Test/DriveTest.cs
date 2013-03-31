@@ -52,7 +52,7 @@ class DriveTest : MonoBehaviour
 
 	IEnumerator GetList()
 	{
-		wait = true;
+		/*wait = true;
 
 		GoogleDrive1 drive;
 
@@ -89,7 +89,9 @@ class DriveTest : MonoBehaviour
 					}
 				}
 			}
-		}
+		}*/
+
+		yield return null;
 	}
 
 #if UNITY_IPHONE

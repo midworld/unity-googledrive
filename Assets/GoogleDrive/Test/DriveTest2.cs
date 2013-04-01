@@ -28,21 +28,21 @@ class DriveTest2 : MonoBehaviour
 	{
 		tasking = true;
 
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
-		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://4leaf.in");
+		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
 
 		Midworld.UnityWebResponse response = request.GetResponse();
 		while (!response.isDone)
 			yield return null;
 		if (response.error == null)
 		{
-			Debug.Log(response.DumpHeaders());
+			Debug.LogWarning(response.DumpHeaders());
 
 			string text = response.text;
 			while (text.Length > 0)
 			{
-				int count = Mathf.Min(text.Length, 500);
-				Debug.LogWarning(text.Substring(0, count));
+				int count = Mathf.Min(text.Length, 2000);
+				Debug.Log(text.Substring(0, count));
 				text = text.Substring(count);
 			}
 		}
@@ -255,48 +255,6 @@ class DriveTest2 : MonoBehaviour
 		}
 
 		tasking = false;
-	}
-
-	void Callback() { }
-
-	IEnumerator ListX(int maxResults = -1)
-	{
-		AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin");
-
-		string token = pluginClass.CallStatic<string>("getAuthToken");
-		Debug.LogWarning("token: " + (token != null ? token : "null"));
-
-		//pluginClass.CallStatic<int>("list", new object[] { (AndroidJavaRunnable)Callback });
-		pluginClass.Dispose();
-
-		yield return null;
-
-		token = "ya29.AHES6ZT0vzbJe7wmy6lfoUQ9pqiqvAQy2FufWvhFMK9MB66wFA";
-
-		string url = "https://www.googleapis.com/drive/v2/files?maxResults=3&key=AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
-
-		HTTP.Request req = new HTTP.Request("GET", url);
-		req.AddHeader("Authorization", "Bearer " + token);
-		req.Send();
-		while (!req.isDone)
-		{
-			yield return null;
-		}
-
-		HTTP.Response res = req.response;
-		Debug.Log(res.Text);
-
-		//yield return null;
-
-		//GoogleDrive.Files.List ticket = 
-		//    new GoogleDrive.Files.List(maxResults);
-
-		//StartCoroutine(ticket);
-
-		//while (!ticket.isDone)
-		//{
-		//    yield return null;
-		//}
 	}
 
 	void Update()

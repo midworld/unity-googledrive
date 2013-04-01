@@ -63,7 +63,8 @@ namespace Midworld
 								uri.PathAndQuery + " " + request.protocol + "\r\n"));
 
 							request.headers["Host"] = uri.Host;
-							request.headers["Connection"] = "Close";
+							//request.headers["Connection"] = "Close";
+							request.headers["Connection"] = "Keep-Alive";
 							if (!request.headers.ContainsKey("Accept-Charset"))
 								request.headers["Accept-Charset"] = "utf-8";
 							if (!request.headers.ContainsKey("User-Agent"))
@@ -104,27 +105,16 @@ namespace Midworld
 
 							/* read headers */
 							{
-								List<byte> line = new List<byte>(4096);
 								List<string> lines = new List<string>();
 
 								do
 								{
-									byte b = (byte)bufferedStream.ReadByte();
+									string line = ReadLine(bufferedStream);
 
-									if (b == (byte)'\r')
-										continue;
-									else if (b == (byte)'\n')
-									{
-										if (line.Count == 0)
-											break;
+									if (line.Length == 0)
+										break;
 
-										lines.Add(Encoding.UTF8.GetString(line.ToArray()));
-
-										line.Clear();
-										continue;
-									}
-
-									line.Add(b);
+									lines.Add(line);
 								} while (true);
 
 								string[] statusLine = lines[0].Split(' ');
@@ -169,35 +159,15 @@ namespace Midworld
 							// test---
 							UnityEngine.Debug.LogWarning(DumpHeaders());
 
-							/* redirection */
-							if ((this.statusCode == 301 ||
-								this.statusCode == 302 ||
-								this.statusCode == 303 ||
-								this.statusCode == 307) &&
-								this.headers.ContainsKey("Location") &&
-								redirection < MAX_REDIRECTION)
-							{
-								string oldHost = uri.Host;
-								uri = new Uri(this.headers["Location"] as string);
-
-								if (oldHost != uri.Host)
-								{
-									stream.Close();
-									client.Close();
-
-									client = new TcpClient();
-									client.Connect(uri.Host, uri.Port);
-								}
-
-								redirection++;
-								continue;
-							}
-
 							/* read body */
 							{
 								int contentLength = -1;
-								//if (this.headers.ContainsKey("Content-Length"))
-								//	contentLength = int.Parse(this.headers["Content-Length"] as string);
+								if (this.headers.ContainsKey("Content-Length"))
+									contentLength = int.Parse(this.headers["Content-Length"] as string);
+
+								string transferEncoding = null;
+								if (this.headers.ContainsKey("Transfer-Encoding"))
+									transferEncoding = (this.headers["Transfer-Encoding"] as string).ToLower();
 
 								if (contentLength >= 0)
 								{
@@ -210,19 +180,76 @@ namespace Midworld
 											bytesReceived, this.bytes.Length - bytesReceived);
 									}
 								}
+								else if (transferEncoding == "chunked")
+								{
+									MemoryStream ms = new MemoryStream(4096);
+									byte[] buffer = new byte[4096];
+									int bytesReceived = 0;
+
+									do
+									{
+										string chunkSizeString = ReadLine(bufferedStream);
+
+										if (chunkSizeString.Length == 0)
+											break;
+
+										int chunkSize = Convert.ToInt32(chunkSizeString, 16);
+
+										if (chunkSize == 0)
+											break;
+
+										while (bytesReceived < chunkSize)
+										{
+											int read = bufferedStream.Read(buffer, 0, 
+												chunkSize - bytesReceived < buffer.Length ? 
+												chunkSize - bytesReceived : buffer.Length);
+
+											ms.Write(buffer, 0, read);
+											bytesReceived += read;
+										}
+									} while (true);
+
+									this.bytes = ms.ToArray();
+								}
 								else
 								{
 									MemoryStream ms = new MemoryStream(4096);
 									byte[] buffer = new byte[4096];
-									int bytesReceived;
+									int read;
 
-									while ((bytesReceived = bufferedStream.Read(buffer, 0, buffer.Length)) > 0)
+									while ((read = bufferedStream.Read(buffer, 0, buffer.Length)) > 0)
 									{
-										ms.Write(buffer, 0, bytesReceived);
+										ms.Write(buffer, 0, read);
 									}
 
 									this.bytes = ms.ToArray();
 								}
+							}
+
+							/* redirection */
+							if ((this.statusCode == 301 ||
+								this.statusCode == 302 ||
+								this.statusCode == 303 ||
+								this.statusCode == 307) &&
+								this.headers.ContainsKey("Location") &&
+								redirection < MAX_REDIRECTION)
+							{
+								string oldHost = uri.Host;
+
+								string location = this.headers["Location"] as string;
+								uri = new Uri(uri, location);
+
+								if (oldHost != uri.Host)
+								{
+									stream.Close();
+									client.Close();
+
+									client = new TcpClient();
+									client.Connect(uri.Host, uri.Port);
+								}
+
+								redirection++;
+								continue;
 							}
 						}
 
@@ -240,6 +267,30 @@ namespace Midworld
 					isDone = true;
 				}
 			});
+		}
+
+		string ReadLine(BufferedStream stream)
+		{
+			List<byte> line = new List<byte>(4096);
+
+			do
+			{
+				int i = stream.ReadByte();
+
+				if (i == -1)
+					break; 
+
+				byte b = (byte)i;
+
+				if (b == (byte)'\r')
+					continue;
+				else if (b == (byte)'\n')
+					break;
+
+				line.Add(b);
+			} while (true);
+
+			return Encoding.UTF8.GetString(line.ToArray());
 		}
 
 		public string DumpHeaders()

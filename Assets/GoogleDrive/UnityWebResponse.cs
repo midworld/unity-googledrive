@@ -264,6 +264,11 @@ namespace Midworld
 						client.Close();
 						break;
 					} while (redirection < MAX_REDIRECTION);
+
+					if (this.headers.ContainsKey("Content-Encoding"))
+					{
+						bytes = Decompress((this.headers["Content-Encoding"] as string).ToLower(), bytes);
+					}
 				}
 				catch (Exception e)
 				{
@@ -300,14 +305,28 @@ namespace Midworld
 			return Encoding.UTF8.GetString(line.ToArray());
 		}
 
-		void DecompressGZip()
+		static byte[] Decompress(string encoding, byte[] data)
 		{
-			//GZipStream 
-		}
+			Stream stream;
 
-		void DecompressDeflate()
-		{
-			//DeflateStream
+			if (encoding == "gzip")
+				stream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
+			else if (encoding == "deflate")
+				stream = new DeflateStream(new MemoryStream(data), CompressionMode.Decompress);
+			else
+				return null;
+
+			MemoryStream output = new MemoryStream(data.Length);
+
+			byte[] buffer = new byte[4096];
+			int read;
+
+			while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+			{
+				output.Write(buffer, 0, read);
+			}
+
+			return output.ToArray();
 		}
 
 		public string DumpHeaders()

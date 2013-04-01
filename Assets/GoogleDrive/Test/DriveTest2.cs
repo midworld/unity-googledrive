@@ -30,10 +30,11 @@ class DriveTest2 : MonoBehaviour
 
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://naver.com");
+		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://naver.com");
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://www.microsoft.com/korea/");
 
-		//request.headers["Accept-Encoding"] = "gzip, deflate";
-		request.headers["Accept-Encoding"] = "deflate";
+		request.headers["Accept-Encoding"] = "gzip, deflate";
+		//request.headers["Accept-Encoding"] = "deflate";
 
 		Midworld.UnityWebResponse response = request.GetResponse();
 		while (!response.isDone)

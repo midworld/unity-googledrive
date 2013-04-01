@@ -19,13 +19,66 @@ class DriveTest2 : MonoBehaviour
 
 	bool tasking = false;
 
+#if UNITY_EDITOR
+	Action<string> getCode = null;
+#endif
+
 	IEnumerator Auth()
 	{
 		tasking = true;
 
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://google.com/");
+		Midworld.UnityWebResponse response = request.GetResponse();
+		while (!response.isDone)
+			yield return null;
+		if (response.error == null)
+		{
+			string headers = "";
+
+			foreach (KeyValuePair<string, string> kv in response.headers)
+			{
+				headers += kv.Key + " : " + kv.Value + "\n";
+			}
+
+			Debug.Log(headers);
+
+			Debug.LogWarning(response.text);
+		}
+		else
+			Debug.LogError(response.error);
+
+		// response.Dispose();
+
+#if UNITY_EDITOR
+		System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
+		startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
+			@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
+			@"redirect_uri=urn:ietf:wg:oauth:2.0:oob&" +
+			//@"redirect_uri=http%3A%2F%2Flocalhost&" +
+			@"response_type=code&" +
+			@"client_id=897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
+
+		System.Diagnostics.Process browser = new System.Diagnostics.Process();
+		browser.StartInfo = startInfo;
+		browser.Start();
+		//browser.WaitForExit();
+
+		string code = null;
+
+		getCode = (copiedCode) =>
+		{
+			code = copiedCode;
+
+			getCode = null;
+		};
+
+		while (code == null)
+			yield return null;
+#else
 		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
 
 		yield return StartCoroutine(GoogleDrive.Auth.Authorize());
+#endif
 
 		if (GoogleDrive.Auth.isAuthorized)
 		{

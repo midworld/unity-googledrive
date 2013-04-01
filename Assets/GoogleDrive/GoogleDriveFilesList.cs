@@ -21,7 +21,9 @@ namespace GoogleDrive
 			{
 				items = new List<File>(); 
 				
+#if UNITY_ANDROID
 				Auth.EnsureActivitySet();
+#endif
 
 				AndroidJavaClass pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin");
 				id = pluginClass.CallStatic<int>("list", new object[] { 

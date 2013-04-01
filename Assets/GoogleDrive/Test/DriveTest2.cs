@@ -29,7 +29,11 @@ class DriveTest2 : MonoBehaviour
 		tasking = true;
 
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
+		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://naver.com");
+
+		//request.headers["Accept-Encoding"] = "gzip, deflate";
+		request.headers["Accept-Encoding"] = "deflate";
 
 		Midworld.UnityWebResponse response = request.GetResponse();
 		while (!response.isDone)
@@ -50,6 +54,9 @@ class DriveTest2 : MonoBehaviour
 			Debug.LogError(response.error);
 
 		// response.Dispose();
+
+		tasking = false;
+		yield break;
 
 #if false && UNITY_EDITOR
 		System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");

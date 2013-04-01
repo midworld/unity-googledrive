@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using Ionic.Zlib;
 
 namespace Midworld
 {
@@ -157,7 +158,9 @@ namespace Midworld
 							}
 
 							// test---
+#if UNITY_EDITOR
 							UnityEngine.Debug.LogWarning(DumpHeaders());
+#endif
 
 							/* read body */
 							{
@@ -184,12 +187,11 @@ namespace Midworld
 								{
 									MemoryStream ms = new MemoryStream(4096);
 									byte[] buffer = new byte[4096];
-									int bytesReceived = 0;
-
+									
 									do
 									{
 										string chunkSizeString = ReadLine(bufferedStream);
-
+										
 										if (chunkSizeString.Length == 0)
 											break;
 
@@ -197,6 +199,8 @@ namespace Midworld
 
 										if (chunkSize == 0)
 											break;
+
+										int bytesReceived = 0;
 
 										while (bytesReceived < chunkSize)
 										{
@@ -207,6 +211,9 @@ namespace Midworld
 											ms.Write(buffer, 0, read);
 											bytesReceived += read;
 										}
+
+										bufferedStream.ReadByte(); // \r
+										bufferedStream.ReadByte(); // \n
 									} while (true);
 
 									this.bytes = ms.ToArray();
@@ -291,6 +298,16 @@ namespace Midworld
 			} while (true);
 
 			return Encoding.UTF8.GetString(line.ToArray());
+		}
+
+		void DecompressGZip()
+		{
+			//GZipStream 
+		}
+
+		void DecompressDeflate()
+		{
+			//DeflateStream
 		}
 
 		public string DumpHeaders()

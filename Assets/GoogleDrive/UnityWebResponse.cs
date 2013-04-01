@@ -14,6 +14,7 @@ namespace Midworld
 	class UnityWebResponse : UnityCoroutine
 	{
 		const int TIMEOUT = 5000;
+		const int MAX_REDIRECTION = 5;
 
 		public string httpVersion { get; protected set; }
 
@@ -21,7 +22,7 @@ namespace Midworld
 
 		public string reasonPhrase { get; protected set; }
 
-		public Dictionary<string, string> headers { get; protected set; }
+		public Hashtable headers { get; protected set; }
 
 		public byte[] bytes { get; protected set; }
 
@@ -35,108 +36,200 @@ namespace Midworld
 			{
 				try
 				{
+					int redirection = 0;
+
 					TcpClient client = new TcpClient();
-					client.Connect(request.uri.Host, request.uri.Port);
+					Uri uri = request.uri;
+					client.Connect(uri.Host, uri.Port);
 
-					Stream stream = client.GetStream();
-					stream.ReadTimeout = TIMEOUT;
-
-					if (request.uri.Scheme == "https")
+					do
 					{
-						stream = new SslStream(stream, false,
-							new RemoteCertificateValidationCallback((sender, cert, chain, error) => true));
-						(stream as SslStream).AuthenticateAsClient(request.uri.Host);
-					}
-
-					/* write */
-					{
-						BinaryWriter writer = new BinaryWriter(stream);
-						writer.Write(Encoding.UTF8.GetBytes(request.method + " " +
-							request.uri.PathAndQuery + " " + request.protocol + "\r\n"));
-
-						request.headers["Host"] = request.uri.Host;
-						foreach (KeyValuePair<string, string> kv in request.headers)
+						client.SendTimeout = TIMEOUT;
+						client.ReceiveTimeout = TIMEOUT;
+						
+						Stream stream = client.GetStream();
+						
+						if (uri.Scheme == "https")
 						{
-							writer.Write(Encoding.UTF8.GetBytes(kv.Key + ":" +
-									kv.Value + "\r\n"));
+							stream = new SslStream(stream, false,
+								new RemoteCertificateValidationCallback((sender, cert, chain, error) => true));
+							(stream as SslStream).AuthenticateAsClient(uri.Host);
 						}
 
-						if (request.postData != null)
+						/* request */
 						{
-							writer.Write(Encoding.UTF8.GetBytes("Content-Length:" +
-								request.postData.Length + "\r\n\r\n"));
-							writer.Write(request.postData);
-						}
-						else
-						{
-							writer.Write(Encoding.UTF8.GetBytes("\r\n"));
-						}
-					}
+							BinaryWriter writer = new BinaryWriter(stream);
+							writer.Write(Encoding.UTF8.GetBytes(request.method + " " +
+								uri.PathAndQuery + " " + request.protocol + "\r\n"));
 
-					/* read */
-					{
-						BufferedStream bufferedStream = new BufferedStream(stream);
+							request.headers["Host"] = uri.Host;
+							request.headers["Connection"] = "Close";
+							if (!request.headers.ContainsKey("Accept-Charset"))
+								request.headers["Accept-Charset"] = "utf-8";
+							if (!request.headers.ContainsKey("User-Agent"))
+								request.headers["User-Agent"] = "Mozilla/5.0 (Unity3d)";
 
-						/* read headers */
-						{
-							List<byte> line = new List<byte>(4096);
-							List<string> lines = new List<string>();
-
-							do
+							foreach (DictionaryEntry kv in request.headers)
 							{
-								byte b = (byte)bufferedStream.ReadByte();
-
-								if (b == (byte)'\r')
-									continue;
-								else if (b == (byte)'\n')
+								if (kv.Key is string && kv.Value is string)
 								{
-									if (line.Count == 0)
-										break;
+									writer.Write(Encoding.UTF8.GetBytes(kv.Key + ": " +
+											kv.Value + "\r\n"));
+								}
+								else if (kv.Key is string && kv.Value is string[])
+								{
+									for (int i = 0; i < (kv.Value as string[]).Length; i++)
+									{
+										writer.Write(Encoding.UTF8.GetBytes(kv.Key + ": " +
+												(kv.Value as string[])[i] + "\r\n"));
+									}
+								}
+							}
 
-									lines.Add(Encoding.UTF8.GetString(line.ToArray()));
+							if (request.postData != null)
+							{
+								writer.Write(Encoding.UTF8.GetBytes("Content-Length:" +
+									request.postData.Length + "\r\n\r\n"));
+								writer.Write(request.postData);
+							}
+							else
+							{
+								writer.Write(Encoding.UTF8.GetBytes("\r\n"));
+							}
+						}
 
-									line.Clear();
-									continue;
+						/* response */
+						{
+							BufferedStream bufferedStream = new BufferedStream(stream);
+
+							/* read headers */
+							{
+								List<byte> line = new List<byte>(4096);
+								List<string> lines = new List<string>();
+
+								do
+								{
+									byte b = (byte)bufferedStream.ReadByte();
+
+									if (b == (byte)'\r')
+										continue;
+									else if (b == (byte)'\n')
+									{
+										if (line.Count == 0)
+											break;
+
+										lines.Add(Encoding.UTF8.GetString(line.ToArray()));
+
+										line.Clear();
+										continue;
+									}
+
+									line.Add(b);
+								} while (true);
+
+								string[] statusLine = lines[0].Split(' ');
+								this.httpVersion = statusLine[0];
+								this.statusCode = int.Parse(statusLine[1]);
+								this.reasonPhrase = string.Join(" ", statusLine, 2, statusLine.Length - 2);
+
+								this.headers = new Hashtable();
+
+								for (int i = 1; i < lines.Count; i++)
+								{
+									string k = lines[i].Substring(0, lines[i].IndexOf(':')).Trim();
+									string v = lines[i].Substring(lines[i].IndexOf(':') + 1).Trim();
+
+									if (!this.headers.ContainsKey(k))
+									{
+										this.headers.Add(k, v);
+									}
+									else
+									{
+										if (this.headers[k] is string)
+										{
+											string a = this.headers[k] as string;
+											string[] b = { a, v };
+
+											this.headers[k] = b;
+										}
+										else if (this.headers[k] is string[])
+										{
+											string[] a = this.headers[k] as string[];
+											string[] b = new string[a.Length + 1];
+											
+											a.CopyTo(b, 0);
+											b[a.Length - 1] = v;
+
+											this.headers[k] = b;
+										}
+									}
+								}
+							}
+
+							// test---
+							UnityEngine.Debug.LogWarning(DumpHeaders());
+
+							/* redirection */
+							if ((this.statusCode == 301 ||
+								this.statusCode == 302 ||
+								this.statusCode == 303 ||
+								this.statusCode == 307) &&
+								this.headers.ContainsKey("Location") &&
+								redirection < MAX_REDIRECTION)
+							{
+								string oldHost = uri.Host;
+								uri = new Uri(this.headers["Location"] as string);
+
+								if (oldHost != uri.Host)
+								{
+									stream.Close();
+									client.Close();
+
+									client = new TcpClient();
+									client.Connect(uri.Host, uri.Port);
 								}
 
-								line.Add(b);
-							} while (true);
+								redirection++;
+								continue;
+							}
 
-							string[] statusLine = lines[0].Split(' ');
-							this.httpVersion = statusLine[0];
-							this.statusCode = int.Parse(statusLine[1]);
-							this.reasonPhrase = statusLine[2];
-
-							this.headers = new Dictionary<string, string>();
-
-							for (int i = 1; i < lines.Count; i++)
+							/* read body */
 							{
-								string k = lines[i].Substring(0, lines[i].IndexOf(':'));
-								string v = lines[i].Substring(lines[i].IndexOf(':') + 1);
+								int contentLength = -1;
+								//if (this.headers.ContainsKey("Content-Length"))
+								//	contentLength = int.Parse(this.headers["Content-Length"] as string);
 
-								this.headers.Add(k.Trim(), v.Trim());
+								if (contentLength >= 0)
+								{
+									this.bytes = new byte[contentLength];
+									int bytesReceived = 0;
+
+									while (bytesReceived < contentLength)
+									{
+										bytesReceived += bufferedStream.Read(this.bytes,
+											bytesReceived, this.bytes.Length - bytesReceived);
+									}
+								}
+								else
+								{
+									MemoryStream ms = new MemoryStream(4096);
+									byte[] buffer = new byte[4096];
+									int bytesReceived;
+
+									while ((bytesReceived = bufferedStream.Read(buffer, 0, buffer.Length)) > 0)
+									{
+										ms.Write(buffer, 0, bytesReceived);
+									}
+
+									this.bytes = ms.ToArray();
+								}
 							}
 						}
 
-						/* read body */
-						{
-							int contentLength = 0;
-							if (this.headers.ContainsKey("Content-Length"))
-								contentLength = int.Parse(this.headers["Content-Length"]);
-
-							this.bytes = new byte[contentLength];
-							int bytesReceived = 0;
-
-							while (bytesReceived < contentLength)
-							{
-								bytesReceived += bufferedStream.Read(this.bytes,
-									bytesReceived, this.bytes.Length - bytesReceived);
-							}
-						}
-					}
-
-					stream.Close();
-					client.Close();
+						stream.Close();
+						client.Close();
+						break;
+					} while (redirection < MAX_REDIRECTION);
 				}
 				catch (Exception e)
 				{
@@ -147,6 +240,35 @@ namespace Midworld
 					isDone = true;
 				}
 			});
+		}
+
+		public string DumpHeaders()
+		{
+			if (this.headers == null)
+				return "";
+
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine(string.Format("{0} {1} {2}",
+				this.httpVersion, this.statusCode, this.reasonPhrase));
+
+			foreach (DictionaryEntry kv in this.headers)
+			{
+				if (kv.Value is string)
+				{
+					sb.AppendLine(string.Format("{0}: {1}",
+						kv.Key, kv.Value));
+				}
+				else
+				{
+					for (int i = 0; i < (kv.Value as string[]).Length; i++)
+					{
+						sb.AppendLine(string.Format("{0}: {1}",
+							kv.Key, (kv.Value as string[])[i]));
+					}
+				}
+			}
+
+			return sb.ToString();
 		}
 	}
 }

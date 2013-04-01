@@ -21,35 +21,37 @@ class DriveTest2 : MonoBehaviour
 
 #if UNITY_EDITOR
 	Action<string> getCode = null;
+	string codeText = "";
 #endif
 
 	IEnumerator Auth()
 	{
 		tasking = true;
 
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://google.com/");
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
+		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://4leaf.in");
+
 		Midworld.UnityWebResponse response = request.GetResponse();
 		while (!response.isDone)
 			yield return null;
 		if (response.error == null)
 		{
-			string headers = "";
+			Debug.Log(response.DumpHeaders());
 
-			foreach (KeyValuePair<string, string> kv in response.headers)
+			string text = response.text;
+			while (text.Length > 0)
 			{
-				headers += kv.Key + " : " + kv.Value + "\n";
+				int count = Mathf.Min(text.Length, 500);
+				Debug.LogWarning(text.Substring(0, count));
+				text = text.Substring(count);
 			}
-
-			Debug.Log(headers);
-
-			Debug.LogWarning(response.text);
 		}
 		else
 			Debug.LogError(response.error);
 
 		// response.Dispose();
 
-#if UNITY_EDITOR
+#if false && UNITY_EDITOR
 		System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
 		startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
 			@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
@@ -339,7 +341,7 @@ class DriveTest2 : MonoBehaviour
 			GUI.enabled = false;
 		}
 
-		if (thumbnail != null)
+		if (thumbnail != null || getCode != null)
 		{
 			GUI.enabled = false;
 		}
@@ -435,5 +437,25 @@ class DriveTest2 : MonoBehaviour
 				thumbnail = null;
 			}
 		}
+
+#if UNITY_EDITOR
+		if (getCode != null)
+		{
+			GUI.enabled = true;
+
+			GUI.Window(0, new Rect(10, (Screen.height - 160) / 2, Screen.width - 20, 160), (id) =>
+			{
+				GUI.Label(new Rect(10, 20, Screen.width - 40, 30), "Paste the code here:");
+
+				codeText = GUI.TextField(new Rect(10, 60, Screen.width - 40, 30), codeText);
+
+				if (GUI.Button(new Rect((Screen.width - 300) / 2, 100, 300, 50), "OK"))
+				{
+					getCode(codeText);
+					codeText = "";
+				}
+			}, "Authorization Dialog");
+		}
+#endif
 	}
 }

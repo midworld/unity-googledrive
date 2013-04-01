@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 
 namespace Midworld
 {
 	class UnityWebRequest
 	{
-		[System.ComponentModel.DefaultValue("GET")]
 		public string method { get; set; }
 
-		[System.ComponentModel.DefaultValue("HTTP/1.1")]
 		public string protocol { get; set; }
 
 		public Uri uri { get; protected set; }
 
-		public Dictionary<string, string> headers { get; protected set; }
+		public Hashtable headers { get; protected set; }
 
 		public byte[] postData = null;
 
@@ -21,9 +19,11 @@ namespace Midworld
 
 		public UnityWebRequest(Uri uri)
 		{
+			this.method = "GET";
+			this.protocol = "HTTP/1.1";
 			this.uri = uri;
 
-			headers = new Dictionary<string, string>();
+			headers = new Hashtable();
 		}
 
 		public UnityWebResponse GetResponse()

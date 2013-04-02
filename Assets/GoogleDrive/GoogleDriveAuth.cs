@@ -170,6 +170,8 @@ namespace GoogleDrive
 			if (json.ContainsKey("email"))
 				selectedAccountName = json["email"] as string;
 
+			// TODO: 'expires_in' @ Android
+
 			isAuthorized = true;
 		}
 

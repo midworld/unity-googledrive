@@ -19,10 +19,9 @@ class DriveTest2 : MonoBehaviour
 
 	bool tasking = false;
 
-#if UNITY_EDITOR
+	// for editor
 	Action<string> getCode = null;
 	string codeText = "";
-#endif
 
 	IEnumerator Auth()
 	{
@@ -64,7 +63,7 @@ class DriveTest2 : MonoBehaviour
 			// Open authorization page.
 			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
 			startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
-				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+" + 
+				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+" +
 				@"https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
 				@"redirect_uri=" + GoogleDrive.Auth.redirectURI + "&" +
 				@"response_type=code&" +
@@ -100,10 +99,39 @@ class DriveTest2 : MonoBehaviour
 		if (GoogleDrive.Auth.isAuthorized)
 		{
 			Debug.Log("Authorization succeeded(" + GoogleDrive.Auth.selectedAccountName + ").");
+
+			//yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
 		}
 		else
 		{
 			Debug.Log("Authorization failed.");
+		}
+
+		{
+			int maxRepeat = 2;
+			string nextPageToken = null;
+
+			for (int i = 0; i < maxRepeat; i++)
+			{
+				var req = new Midworld.UnityWebRequest("https://www.googleapis.com/drive/v2/files?" +
+					"maxResults=1&" +
+					(nextPageToken != null ? "pageToken=" + nextPageToken : ""));
+				req.headers["Authorization"] = "Bearer " + GoogleDrive.Auth.token;
+
+				var res = req.GetResponse();
+
+				yield return StartCoroutine(res);
+				
+				Debug.Log(res.text);
+
+				JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(res.text);
+				var json = reader.Deserialize<Dictionary<string, object>>();
+
+				if (json.ContainsKey("nextPageToken"))
+					nextPageToken = json["nextPageToken"] as string;
+				else
+					break;
+			}
 		}
 
 		tasking = false;

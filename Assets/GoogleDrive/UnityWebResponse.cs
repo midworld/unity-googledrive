@@ -27,7 +27,18 @@ namespace Midworld
 
 		public byte[] bytes { get; protected set; }
 
-		public String text { get { return Encoding.UTF8.GetString(bytes); } }
+		private string cachedText = null;
+
+		public String text 
+		{ 
+			get 
+			{
+ 				if (cachedText == null)
+					cachedText = Encoding.UTF8.GetString(bytes);
+				
+				return cachedText;
+			}
+		}
 
 		public Exception error { get; protected set; }
 

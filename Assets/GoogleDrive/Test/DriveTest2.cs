@@ -213,26 +213,17 @@ class DriveTest2 : MonoBehaviour
 	{
 		tasking = true;
 
-		/*WWW www = new WWW(url);
+		var request = new Midworld.UnityWebRequest(url);
+		request.headers["Authorization"] = "Bearer " + GoogleDrive.Auth.token;
 
-		yield return www;
+		var response = request.GetResponse();
+		yield return StartCoroutine(response);
 
-		if (www.error == null)
-			thumbnail = www.texture;
-		else
-			Debug.LogError(www.error);*/
-
-		Midworld.UnityWWW.Request request = new Midworld.UnityWWW.Request(url);
-		request.headers.Add("Authorization", "Bearer " + GoogleDrive.Auth.token);
-
-		Midworld.UnityWWW www = new Midworld.UnityWWW(request);
-		yield return StartCoroutine(www);
-
-		if (www.error == null)
+		if (response.error == null)
 		{
 			string headers = "";
 
-			foreach (KeyValuePair<string, string> kv in www.response.headers)
+			foreach (KeyValuePair<string, string> kv in response.headers)
 			{
 				headers += kv.Key + " : " + kv.Value + "\n";
 			}
@@ -240,35 +231,12 @@ class DriveTest2 : MonoBehaviour
 			Debug.Log(headers);
 
 			thumbnail = new Texture2D(0, 0);
-			thumbnail.LoadImage(www.response.bytes);
+			thumbnail.LoadImage(response.bytes);
 		}
 		else
 		{
-			Debug.LogError(www.error);
+			Debug.LogError(response.error);
 		}
-
-		/*HTTP.Request req = new HTTP.Request("GET", url);
-		req.AddHeader("Authorization", "Bearer " + GoogleDrive.Auth.token);
-		req.Send();
-		while (!req.isDone && req.exception == null)
-		{
-			yield return null;
-		}
-
-		try
-		{
-			if (req.exception == null)
-			{
-				HTTP.Response res = req.response;
-
-				thumbnail = new Texture2D(0, 0);
-				thumbnail.LoadImage(res.bytes);
-			}
-		}
-		catch (Exception e)
-		{
-			Debug.LogError(e);
-		}*/
 
 		tasking = false;
 	}

@@ -61,24 +61,33 @@ namespace GoogleDrive
 			//Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
-			var json = reader.Deserialize<Dictionary<string, string>>();
+			var json = reader.Deserialize<Dictionary<string, object>>();
 
-			if (json.ContainsKey("error"))
+			if (json == null)
+			{
+				Debug.LogError("GetTokenByAuthorizationCode:\n" + response.text);
+				yield break;
+			}
+			else if (json.ContainsKey("error"))
 			{
 				Debug.LogWarning("GetTokenByAuthorizationCode:\n" + json["error"]);
 				yield break;
 			}
 
-			token = json["access_token"];
-			tokenExpiresIn = int.Parse(json["expires_in"]);
+			token = json["access_token"] as string;
+			tokenExpiresIn = int.Parse(json["expires_in"] as string);
 			if (json.ContainsKey("refresh_token"))
-				refreshToken = json["refresh_token"];
+				refreshToken = json["refresh_token"] as string;
+			if (json.ContainsKey("email"))
+				selectedAccountName = json["email"] as string;
 
 			PlayerPrefs.SetString("UnityGoogleDrive_AccessToken", token);
 			PlayerPrefs.SetInt("UnityGoogleDrive_ExpiresIn", tokenExpiresIn);
 			PlayerPrefs.SetString("UnityGoogleDrive_TokenGetAt", DateTime.Now.ToString());
 			if (refreshToken != null)
 				PlayerPrefs.SetString("UnityGoogleDrive_RefreshToken", refreshToken);
+			if (selectedAccountName != null)
+				PlayerPrefs.SetString("UnityGoogleDrive_Email", selectedAccountName);
 
 			isAuthorized = true;
 		}
@@ -142,9 +151,14 @@ namespace GoogleDrive
 			//Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
-			var json = reader.Deserialize<Dictionary<string, string>>();
+			var json = reader.Deserialize<Dictionary<string, object>>();
 
-			if (json.ContainsKey("error"))
+			if (json == null)
+			{
+				Debug.LogError("ValidateToken:\n" + response.text);
+				yield break;
+			}
+			else if (json.ContainsKey("error"))
 			{
 				Debug.LogWarning("ValidateToken:\n" + json["error"]);
 				yield break;
@@ -152,6 +166,9 @@ namespace GoogleDrive
 
 			token = _token;
 			PlayerPrefs.SetString("UnityGoogleDrive_AccessToken", token);
+
+			if (json.ContainsKey("email"))
+				selectedAccountName = json["email"] as string;
 
 			isAuthorized = true;
 		}
@@ -197,24 +214,33 @@ namespace GoogleDrive
 			//Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
-			var json = reader.Deserialize<Dictionary<string, string>>();
+			var json = reader.Deserialize<Dictionary<string, object>>();
 
-			if (json.ContainsKey("error"))
+			if (json == null)
+			{
+				Debug.LogError("GetTokenByAuthorizationCode:\n" + response.text);
+				yield break;
+			}
+			else if (json.ContainsKey("error"))
 			{
 				Debug.LogWarning("RefreshToken:\n" + json["error"]);
 				yield break;
 			}
 
-			token = json["access_token"];
-			tokenExpiresIn = int.Parse(json["expires_in"]);
+			token = json["access_token"] as string;
+			tokenExpiresIn = int.Parse(json["expires_in"] as string);
 			if (json.ContainsKey("refresh_token"))
-				refreshToken = json["refresh_token"];
+				refreshToken = json["refresh_token"] as string;
+			if (json.ContainsKey("email"))
+				selectedAccountName = json["email"] as string;
 
 			PlayerPrefs.SetString("UnityGoogleDrive_AccessToken", token);
 			PlayerPrefs.SetInt("UnityGoogleDrive_ExpiresIn", tokenExpiresIn);
 			PlayerPrefs.SetString("UnityGoogleDrive_TokenGetAt", DateTime.Now.ToString());
 			if (refreshToken != null)
 				PlayerPrefs.SetString("UnityGoogleDrive_RefreshToken", refreshToken);
+			if (selectedAccountName != null)
+				PlayerPrefs.SetString("UnityGoogleDrive_Email", selectedAccountName);
 
 			isAuthorized = true;
 		}
@@ -246,7 +272,7 @@ namespace GoogleDrive
 			//Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
-			var json = reader.Deserialize<Dictionary<string, string>>();
+			var json = reader.Deserialize<Dictionary<string, object>>();
 
 			if (json != null && json.ContainsKey("error"))
 			{

@@ -64,7 +64,8 @@ class DriveTest2 : MonoBehaviour
 			// Open authorization page.
 			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
 			startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
-				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
+				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+" + 
+				@"https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
 				@"redirect_uri=" + GoogleDrive.Auth.redirectURI + "&" +
 				@"response_type=code&" +
 				@"client_id=" + GoogleDrive.Auth.clientID;

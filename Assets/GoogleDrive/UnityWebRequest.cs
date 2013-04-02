@@ -14,7 +14,24 @@ namespace Midworld
 
 		public Hashtable headers { get; protected set; }
 
-		public byte[] postData = null;
+		private byte[] _postData = null;
+
+		public byte[] postData
+		{
+			get
+			{
+				return _postData;
+			}
+			set
+			{
+				_postData = value;
+
+				if (_postData != null)
+					this.headers["Content-Length"] = value.Length.ToString();
+				else
+					this.headers.Remove("Content-Length");
+			}
+		}
 
 		public UnityWebRequest(string uri) : this(new Uri(uri)) { }
 
@@ -31,6 +48,7 @@ namespace Midworld
 			this.headers["Connection"] = "Keep-Alive";
 			this.headers["Accept-Charset"] = "utf-8";
 			this.headers["User-Agent"] = "Mozilla/5.0 (Unity3d)";
+			this.headers["Accept-Encoding"] = "gzip, deflate";
 		}
 
 		public UnityWebResponse GetResponse()
@@ -60,18 +78,18 @@ namespace Midworld
 
 			foreach (DictionaryEntry kv in this.headers)
 			{
-				if (kv.Value is string)
-				{
-					sb.AppendLine(string.Format("{0}: {1}",
-						kv.Key, kv.Value));
-				}
-				else
+				if (kv.Value is string[])
 				{
 					for (int i = 0; i < (kv.Value as string[]).Length; i++)
 					{
 						sb.AppendLine(string.Format("{0}: {1}",
 							kv.Key, (kv.Value as string[])[i]));
 					}
+				}
+				else
+				{
+					sb.AppendLine(string.Format("{0}: {1}",
+						kv.Key, kv.Value));
 				}
 			}
 

@@ -15,19 +15,6 @@ class DriveTest2 : MonoBehaviour
 	void Start()
 	{
 		files = new List<GoogleDrive.Files.File>();
-
-		(new Midworld.UnityWebRequest("http://google.com")).GetResponse((response) =>
-		{
-			if (response.error != null)
-			{
-				Debug.LogError(response.error);
-			}
-			else
-			{
-				Debug.LogWarning(response.DumpHeaders());
-				Debug.Log(response.text);
-			}
-		});
 	}
 
 	bool tasking = false;
@@ -41,65 +28,68 @@ class DriveTest2 : MonoBehaviour
 	{
 		tasking = true;
 
-		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
-		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
-		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://naver.com");
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://www.microsoft.com");
+#if UNITY_EDITOR || UNITY_IPHONE
+		GoogleDrive.Auth.clientID =
+			"897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
+		GoogleDrive.Auth.clientSecret =
+			"tGNLbYnrdRO2hdFmwJAo5Fbt";
+		GoogleDrive.Auth.redirectURI =
+			"urn:ietf:wg:oauth:2.0:oob";
+#elif UNITY_ANDROID
+		GoogleDrive.Auth.clientID =
+			"897584417662-hs5soq7srr706129i8t8qq7b8cc7cgha.apps.googleusercontent.com";
+		// Android doesn't need the client secret.
+		GoogleDrive.Auth.redirectURI =
+			"urn:ietf:wg:oauth:2.0:oob";
+#endif
 
-		//request.headers["Accept-Encoding"] = "gzip, deflate";
-		//request.headers["Accept-Encoding"] = "deflate";
-		request.headers["Accept-Encoding"] = new string[] { "gzip", "deflate" };
-
-		Debug.Log(request.DumpHeaders());
-
-		Midworld.UnityWebResponse response = request.GetResponse();
-		while (!response.isDone)
-			yield return null;
-		if (response.error == null)
+#if UNITY_EDITOR
+		if (GoogleDrive.Auth.HasAccessToken())
 		{
-			Debug.LogWarning(response.DumpHeaders());
-
-			string text = response.text;
-			while (text.Length > 0)
+			if (GoogleDrive.Auth.IsTokenExpired())
 			{
-				int count = Mathf.Min(text.Length, 2000);
-				Debug.Log(text.Substring(0, count));
-				text = text.Substring(count);
+				if (GoogleDrive.Auth.CanRefreshToken())
+				{
+					yield return StartCoroutine(GoogleDrive.Auth.RefreshToken());
+				}
+			}
+			else
+			{
+				yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
 			}
 		}
-		else
-			Debug.LogError(response.error);
 
-		// response.Dispose();
-
-		tasking = false;
-		yield break;
-
-#if false && UNITY_EDITOR
-		System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
-		startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
-			@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
-			@"redirect_uri=urn:ietf:wg:oauth:2.0:oob&" +
-			//@"redirect_uri=http%3A%2F%2Flocalhost&" +
-			@"response_type=code&" +
-			@"client_id=897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
-
-		System.Diagnostics.Process browser = new System.Diagnostics.Process();
-		browser.StartInfo = startInfo;
-		browser.Start();
-		//browser.WaitForExit();
-
-		string code = null;
-
-		getCode = (copiedCode) =>
+		if (!GoogleDrive.Auth.isAuthorized)
 		{
-			code = copiedCode;
+			// Open authorization page.
+			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
+			startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
+				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
+				@"redirect_uri=" + GoogleDrive.Auth.redirectURI + "&" +
+				@"response_type=code&" +
+				@"client_id=" + GoogleDrive.Auth.clientID;
 
-			getCode = null;
-		};
+			System.Diagnostics.Process browser = new System.Diagnostics.Process();
+			browser.StartInfo = startInfo;
+			browser.Start();
 
-		while (code == null)
-			yield return null;
+			// Wait for authorization code.
+			string code = null;
+
+			getCode = (copiedCode) =>
+			{
+				code = copiedCode;
+
+				PlayerPrefs.SetString("GoogleDriveAuthCode", code);
+
+				getCode = null;
+			};
+
+			while (code == null)
+				yield return null;
+
+			yield return StartCoroutine(GoogleDrive.Auth.GetTokenByAuthorizationCode(code));
+		}
 #elif UNITY_ANDROID
 		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
 
@@ -108,11 +98,11 @@ class DriveTest2 : MonoBehaviour
 
 		if (GoogleDrive.Auth.isAuthorized)
 		{
-			Debug.Log("Authorization success(" + GoogleDrive.Auth.selectedAccountName + ").");
+			Debug.Log("Authorization succeeded(" + GoogleDrive.Auth.selectedAccountName + ").");
 		}
 		else
 		{
-			Debug.Log("Authorization failure.");
+			Debug.Log("Authorization failed.");
 		}
 
 		tasking = false;
@@ -254,29 +244,11 @@ class DriveTest2 : MonoBehaviour
 		tasking = false;
 	}
 
-	IEnumerator UnityWWWTest()
+	IEnumerator Revoke()
 	{
 		tasking = true;
 
-		Midworld.UnityWWW www = 
-			new Midworld.UnityWWW("https://ssl.gstatic.com/docs/doclist/images/icon_11_document_list.png");
-			//new Midworld.UnityWWW("http://google.com");
-		yield return StartCoroutine(www);
-
-		if (www.error != null)
-		{
-			Debug.LogError(www.error);
-		}
-		else
-		{
-			foreach (KeyValuePair<string, string> kv in www.response.headers)
-			{
-				Debug.Log(kv.Key + " : " + kv.Value);
-			}
-
-			Debug.Log(www.response.bytes.Length);
-			//Debug.Log(www.response.text);
-		}
+		yield return StartCoroutine(GoogleDrive.Auth.RevokeToken());
 
 		tasking = false;
 	}
@@ -403,9 +375,9 @@ class DriveTest2 : MonoBehaviour
 				StartCoroutine(List(20));
 			}
 
-			if (GUI.Button(new Rect(400, 10, 120, 80), "UnityWWW Test"))
+			if (GUI.Button(new Rect(400, 10, 120, 80), "Revoke"))
 			{
-				StartCoroutine(UnityWWWTest());
+				StartCoroutine(Revoke());
 			}
 		}
 		GUI.EndGroup();

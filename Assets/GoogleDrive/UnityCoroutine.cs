@@ -57,6 +57,9 @@ namespace Midworld
 		/// </summary>
 		/// <remarks>
 		/// Callback the done function only once when the flag set true.
+		/// If this UnityCorouine started by StartCoroutine() then 
+		/// done function will run in main thread. If it is not then the
+		/// function will run in the working thread.
 		/// </remarks>
 		public bool isDone
 		{
@@ -69,7 +72,7 @@ namespace Midworld
 			{
 				_isDone = value;
 
-				if (_isDone && done != null)
+				if (_isDone && !isCoroutine && done != null)
 				{
 					done(this);
 					done = null;
@@ -110,7 +113,15 @@ namespace Midworld
 		/// <summary>
 		/// Run the routines one at a time(each routine at each update).
 		/// </summary>
+		/// <remarks>
+		/// Do not dequeue manually.
+		/// </remarks>
 		protected Queue<Action> routines = new Queue<Action>();
+
+		/// <summary>
+		/// Is this UnityCoroutine started by StartCoroutine().
+		/// </summary>
+		private bool isCoroutine = false;
 
 		/// <summary>
 		/// Run the routines.
@@ -118,10 +129,18 @@ namespace Midworld
 		/// <returns>Is there remaining work.</returns>
 		public bool MoveNext()
 		{
+			isCoroutine = true;
+
 			if (!isDone && routines.Count > 0)
 			{
 				Action routine = routines.Dequeue();
 				routine();
+			}
+
+			if (isDone && done != null)
+			{
+				done(this);
+				done = null;
 			}
 
 			return !isDone;

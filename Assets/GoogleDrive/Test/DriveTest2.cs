@@ -223,7 +223,7 @@ class DriveTest2 : MonoBehaviour
 		{
 			string headers = "";
 
-			foreach (KeyValuePair<string, string> kv in response.headers)
+			foreach (DictionaryEntry kv in response.headers)
 			{
 				headers += kv.Key + " : " + kv.Value + "\n";
 			}

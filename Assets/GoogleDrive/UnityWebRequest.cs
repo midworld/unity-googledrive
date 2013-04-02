@@ -35,7 +35,18 @@ namespace Midworld
 
 		public UnityWebResponse GetResponse()
 		{
-			return new UnityWebResponse(this);
+			return GetResponse(null);
+		}
+
+		public UnityWebResponse GetResponse(Action<UnityWebResponse> callback)
+		{
+			UnityWebResponse response = new UnityWebResponse(this);
+			response.done = (coroutine) =>
+			{
+				callback(coroutine as UnityWebResponse);
+			};
+
+			return response;
 		}
 
 		public string DumpHeaders()

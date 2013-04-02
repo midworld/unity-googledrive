@@ -15,6 +15,19 @@ class DriveTest2 : MonoBehaviour
 	void Start()
 	{
 		files = new List<GoogleDrive.Files.File>();
+
+		(new Midworld.UnityWebRequest("http://google.com")).GetResponse((response) =>
+		{
+			if (response.error != null)
+			{
+				Debug.LogError(response.error);
+			}
+			else
+			{
+				Debug.LogWarning(response.DumpHeaders());
+				Debug.Log(response.text);
+			}
+		});
 	}
 
 	bool tasking = false;

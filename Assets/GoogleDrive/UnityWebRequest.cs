@@ -59,10 +59,14 @@ namespace Midworld
 		public UnityWebResponse GetResponse(Action<UnityWebResponse> callback)
 		{
 			UnityWebResponse response = new UnityWebResponse(this);
-			response.done = (coroutine) =>
+			
+			if (callback != null)
 			{
-				callback(coroutine as UnityWebResponse);
-			};
+				response.done = (coroutine) =>
+				{
+					callback(coroutine as UnityWebResponse);
+				};
+			}
 
 			return response;
 		}

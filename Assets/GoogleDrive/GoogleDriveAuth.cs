@@ -58,7 +58,7 @@ namespace GoogleDrive
 				yield break;
 			}
 
-			//Debug.Log(response.text);
+			Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
 			var json = reader.Deserialize<Dictionary<string, object>>();
@@ -75,7 +75,7 @@ namespace GoogleDrive
 			}
 
 			token = json["access_token"] as string;
-			tokenExpiresIn = int.Parse(json["expires_in"] as string);
+			tokenExpiresIn = (int)json["expires_in"];
 			if (json.ContainsKey("refresh_token"))
 				refreshToken = json["refresh_token"] as string;
 			if (json.ContainsKey("email"))
@@ -230,7 +230,7 @@ namespace GoogleDrive
 			}
 
 			token = json["access_token"] as string;
-			tokenExpiresIn = int.Parse(json["expires_in"] as string);
+			tokenExpiresIn = (int)json["expires_in"];
 			if (json.ContainsKey("refresh_token"))
 				refreshToken = json["refresh_token"] as string;
 			if (json.ContainsKey("email"))

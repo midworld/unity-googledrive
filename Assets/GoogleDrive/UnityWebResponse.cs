@@ -42,19 +42,25 @@ namespace Midworld
 					TcpClient client = new TcpClient();
 					Uri uri = request.uri;
 					client.Connect(uri.Host, uri.Port);
+					bool newConnection = true;
+					Stream stream = null;
 
 					do
 					{
-						client.SendTimeout = TIMEOUT;
-						client.ReceiveTimeout = TIMEOUT;
-						
-						Stream stream = client.GetStream();
-						
-						if (uri.Scheme == "https")
+						/* get stream */
+						if (newConnection)
 						{
-							stream = new SslStream(stream, false,
-								new RemoteCertificateValidationCallback((sender, cert, chain, error) => true));
-							(stream as SslStream).AuthenticateAsClient(uri.Host);
+							client.SendTimeout = TIMEOUT;
+							client.ReceiveTimeout = TIMEOUT;
+
+							stream = client.GetStream();
+
+							if (uri.Scheme == "https")
+							{
+								stream = new SslStream(stream, false,
+									new RemoteCertificateValidationCallback((sender, cert, chain, error) => true));
+								(stream as SslStream).AuthenticateAsClient(uri.Host);
+							}
 						}
 
 						/* request */
@@ -64,13 +70,7 @@ namespace Midworld
 								uri.PathAndQuery + " " + request.protocol + "\r\n"));
 
 							request.headers["Host"] = uri.Host;
-							//request.headers["Connection"] = "Close";
-							request.headers["Connection"] = "Keep-Alive";
-							if (!request.headers.ContainsKey("Accept-Charset"))
-								request.headers["Accept-Charset"] = "utf-8";
-							if (!request.headers.ContainsKey("User-Agent"))
-								request.headers["User-Agent"] = "Mozilla/5.0 (Unity3d)";
-
+							
 							foreach (DictionaryEntry kv in request.headers)
 							{
 								if (kv.Key is string && kv.Value is string)
@@ -159,6 +159,7 @@ namespace Midworld
 
 							// test---
 #if UNITY_EDITOR
+							UnityEngine.Debug.LogWarning(request.DumpHeaders());
 							UnityEngine.Debug.LogWarning(DumpHeaders());
 #endif
 
@@ -253,7 +254,11 @@ namespace Midworld
 
 									client = new TcpClient();
 									client.Connect(uri.Host, uri.Port);
+
+									newConnection = true;
 								}
+								else
+									newConnection = false;
 
 								redirection++;
 								continue;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Text;
 
 namespace Midworld
 {
@@ -24,11 +25,46 @@ namespace Midworld
 			this.uri = uri;
 
 			headers = new Hashtable();
+
+			this.headers["Host"] = uri.Host;
+			//this.headers["Connection"] = "Close";
+			this.headers["Connection"] = "Keep-Alive";
+			this.headers["Accept-Charset"] = "utf-8";
+			this.headers["User-Agent"] = "Mozilla/5.0 (Unity3d)";
 		}
 
 		public UnityWebResponse GetResponse()
 		{
 			return new UnityWebResponse(this);
+		}
+
+		public string DumpHeaders()
+		{
+			if (this.headers == null)
+				return "";
+
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine(string.Format("{0} {1} {2}",
+				this.method, uri.PathAndQuery, this.protocol));
+
+			foreach (DictionaryEntry kv in this.headers)
+			{
+				if (kv.Value is string)
+				{
+					sb.AppendLine(string.Format("{0}: {1}",
+						kv.Key, kv.Value));
+				}
+				else
+				{
+					for (int i = 0; i < (kv.Value as string[]).Length; i++)
+					{
+						sb.AppendLine(string.Format("{0}: {1}",
+							kv.Key, (kv.Value as string[])[i]));
+					}
+				}
+			}
+
+			return sb.ToString();
 		}
 	}
 }

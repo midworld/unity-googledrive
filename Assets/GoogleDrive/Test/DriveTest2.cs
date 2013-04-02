@@ -31,10 +31,13 @@ class DriveTest2 : MonoBehaviour
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://google.com/");
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://wn.studio272.net");
 		//Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://naver.com");
-		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("http://www.microsoft.com/korea/");
+		Midworld.UnityWebRequest request = new Midworld.UnityWebRequest("https://www.microsoft.com/korea/");
 
-		request.headers["Accept-Encoding"] = "gzip, deflate";
+		//request.headers["Accept-Encoding"] = "gzip, deflate";
 		//request.headers["Accept-Encoding"] = "deflate";
+		request.headers["Accept-Encoding"] = new string[] { "gzip", "deflate" };
+
+		Debug.Log(request.DumpHeaders());
 
 		Midworld.UnityWebResponse response = request.GetResponse();
 		while (!response.isDone)
@@ -84,7 +87,7 @@ class DriveTest2 : MonoBehaviour
 
 		while (code == null)
 			yield return null;
-#else
+#elif UNITY_ANDROID
 		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
 
 		yield return StartCoroutine(GoogleDrive.Auth.Authorize());

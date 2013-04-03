@@ -58,7 +58,7 @@ namespace GoogleDrive
 				yield break;
 			}
 
-			Debug.Log(response.text);
+			//Debug.Log(response.text);
 
 			JsonFx.Json.JsonReader reader = new JsonFx.Json.JsonReader(response.text);
 			var json = reader.Deserialize<Dictionary<string, object>>();
@@ -78,16 +78,12 @@ namespace GoogleDrive
 			tokenExpiresIn = (int)json["expires_in"];
 			if (json.ContainsKey("refresh_token"))
 				refreshToken = json["refresh_token"] as string;
-			if (json.ContainsKey("email"))
-				selectedAccountName = json["email"] as string;
 
 			PlayerPrefs.SetString("UnityGoogleDrive_AccessToken", token);
 			PlayerPrefs.SetInt("UnityGoogleDrive_ExpiresIn", tokenExpiresIn);
 			PlayerPrefs.SetString("UnityGoogleDrive_TokenGetAt", DateTime.Now.ToString());
 			if (refreshToken != null)
 				PlayerPrefs.SetString("UnityGoogleDrive_RefreshToken", refreshToken);
-			if (selectedAccountName != null)
-				PlayerPrefs.SetString("UnityGoogleDrive_Email", selectedAccountName);
 
 			isAuthorized = true;
 		}
@@ -95,13 +91,13 @@ namespace GoogleDrive
 		public static bool HasAccessToken()
 		{
 			token = PlayerPrefs.GetString("UnityGoogleDrive_AccessToken", null);
-			return (token != null);
+			return (token != null && token.Length > 0);
 		}
 
 		public static bool CanRefreshToken()
 		{
 			refreshToken = PlayerPrefs.GetString("UnityGoogleDrive_RefreshToken", null);
-			return (refreshToken != null);
+			return (refreshToken != null && refreshToken.Length > 0);
 		}
 
 		public static bool IsTokenExpired()

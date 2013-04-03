@@ -83,10 +83,31 @@ namespace Midworld
 		/// <summary>
 		/// Done callback function.
 		/// </summary>
+		private Action<UnityCoroutine> _done = null;
+
+		/// <summary>
+		/// Done callback function getter/setter.
+		/// </summary>
 		/// <remarks>
-		/// It must be set before StartCoroutine() if you want to use the done callback.
+		/// Done callback run immediately if the coroutine is already done.
 		/// </remarks>
-		public Action<UnityCoroutine> done { get; set; }
+		public Action<UnityCoroutine> done 
+		{
+			get
+			{
+				return _done;
+			}
+			set
+			{
+				_done = value;
+
+				if (isDone)
+				{
+					_done(this);
+					_done = null;
+				}
+			}
+		}
 
 		/// <summary>
 		/// Create a Unity coroutine without the done callback.

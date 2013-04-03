@@ -89,6 +89,7 @@ class DriveTest2 : MonoBehaviour
 				yield return null;
 
 			yield return StartCoroutine(GoogleDrive.Auth.GetTokenByAuthorizationCode(code));
+			yield return StartCoroutine(GoogleDrive.Auth.ValidateToken()); // get the email address
 		}
 #elif UNITY_ANDROID
 		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";

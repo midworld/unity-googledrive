@@ -50,6 +50,7 @@ class DriveTest2 : MonoBehaviour
 				if (GoogleDrive.Auth.CanRefreshToken())
 				{
 					yield return StartCoroutine(GoogleDrive.Auth.RefreshToken());
+					yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
 				}
 			}
 			else

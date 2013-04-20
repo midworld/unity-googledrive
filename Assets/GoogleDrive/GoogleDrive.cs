@@ -1,46 +1,589 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
+using Midworld;
+using JsonFx.Json;
 
 partial class GoogleDrive
 {
 	/// <summary>
+	/// Port number for authorization redirection server.
+	/// </summary>
+	const int SERVER_PORT = 9271;
+
+	/// <summary>
 	/// Google Drive Application Client ID
 	/// </summary>
-	public static string clientID { get; set; }
+	public string ClientID { get; set; }
 
 	/// <summary>
 	/// Google Drive Application Secret Key
 	/// </summary>
 	/// <remarks>Android doesn't need this value.</remarks>
-	public static string clientSecret { get; set; }
+	public string ClientSecret { get; set; }
 
 	/// <summary>
-	/// Google Drive Application Redirect URI
+	/// Redirection URI.
 	/// </summary>
-	/// <remarks>Android/iOS doesn't need this value.</remarks>
-	public static string redirectURI { get; set; }
+	/// <remarks>Only for PC.</remarks>
+	public string RedirectURI
+	{
+		get { return "http://localhost:" + SERVER_PORT; }
+	}
+
+	#region AUTHORIZATION
+	string accessToken = null;
+
+	/// <summary>
+	/// Access token.
+	/// </summary>
+	string AccessToken
+	{
+		get
+		{
+			if (accessToken == null)
+			{
+				int key = ClientID.GetHashCode();
+				accessToken = PlayerPrefs.GetString("UnityGoogleDrive_Token_" + key, "");
+			}
+
+			return accessToken;
+		}
+		set
+		{
+			if (accessToken != value)
+			{
+				accessToken = value;
+
+				int key = ClientID.GetHashCode();
+
+				if (accessToken != null)
+					PlayerPrefs.SetString("UnityGoogleDrive_Token_" + key, accessToken);
+				else
+					PlayerPrefs.DeleteKey("UnityGoogleDrive_Token_" + key);
+			}
+		}
+	}
+
+	string refreshToken = null;
+
+	/// <summary>
+	/// Refresh token.
+	/// </summary>
+	string RefreshToken
+	{
+		get
+		{
+			if (refreshToken == null)
+			{
+				int key = ClientID.GetHashCode();
+				refreshToken = PlayerPrefs.GetString("UnityGoogleDrive_RefreshToken_" + key, "");
+			}
+
+			return refreshToken;
+		}
+		set
+		{
+			if (refreshToken != value)
+			{
+				refreshToken = value;
+
+				int key = ClientID.GetHashCode();
+
+				if (refreshToken != null)
+					PlayerPrefs.SetString("UnityGoogleDrive_RefreshToken_" + key, refreshToken);
+				else
+					PlayerPrefs.DeleteKey("UnityGoogleDrive_RefreshToken_" + key);
+			}
+		}
+	}
+
+	/// <summary>
+	/// User's E-Mail address.
+	/// </summary>
+	public string EMail { get; private set; }
 
 	/// <summary>
 	/// Start authorization.
 	/// </summary>
-	IEnumerator Authorize()
+	public IEnumerator Authorize()
 	{
-		int key = clientID.GetHashCode();
-
-		string token = 
-			PlayerPrefs.GetString("UnityGoogleDrive_Token_" + key, "");
-		string refreshToken = 
-			PlayerPrefs.GetString("UnityGoogleDrive_RefreshToken_" + key, "");
+		#region CHECK CLIENT ID AND SECRET
+		if (Application.platform == RuntimePlatform.Android)
+		{
+			if (ClientID == null)
+			{
+				Debug.LogError("ClientID is null.");
+				yield break;
+			}
+		}
+		else
+		{
+			if (ClientID == null || ClientSecret == null)
+			{
+				Debug.LogError("ClientID or ClientSecret is null.");
+				yield break;
+			}
+		}
+		#endregion
 
 #if !UNITY_EDITOR && UNITY_ANDROID
 		// TODO: Android authorization
 #elif !UNITY_EDITOR && UNITY_IPHONE
 		// TODO: iOS authorization
 #else
-		
+		if (AccessToken == "")
+		{
+			// Open browser and authorization.
+			var routine = GetAuthorizationCodeAndAccessToken();
+			while (routine.MoveNext())
+				yield return null;
+
+			yield return routine.Current;
+		}
+		else
+		{
+			// Check the access token.
+			var validate = ValidateToken(accessToken);
+			{
+				while (validate.MoveNext())
+					yield return null;
+
+				var res = (TokenInfoResponse)validate.Current;
+
+				// Require re-authorization.
+				if (res.error != null)
+				{
+					if (RefreshToken != "")
+					{
+						// Try refresh token.
+						var refresh = RefreshAccessToken();
+						while (refresh.MoveNext())
+							yield return null;
+					}
+
+					// No refresh token or failed.
+					if (AccessToken == "")
+					{
+						// Open browser and authorization.
+						var routine = GetAuthorizationCodeAndAccessToken();
+						while (routine.MoveNext())
+							yield return null;
+
+						yield return routine.Current;
+					}
+				}
+
+				EMail = res.email;
+			}
+		}
 #endif
 
 		yield break;
 	}
+
+	IEnumerator GetAuthorizationCodeAndAccessToken()
+	{
+		// Google authorization URL
+		Uri uri = new Uri("https://accounts.google.com/o/oauth2/auth?" +
+			"scope=" +
+				"https://www.googleapis.com/auth/drive.file" +
+				" https://www.googleapis.com/auth/userinfo.email" +
+			"&response_type=code" +
+			"&redirect_uri=" + RedirectURI +
+			"&client_id=" + ClientID);
+
+		if (Application.platform == RuntimePlatform.WindowsWebPlayer ||
+			Application.platform == RuntimePlatform.OSXWebPlayer ||
+			Application.platform == RuntimePlatform.FlashPlayer)
+		{
+			// TODO: javascript authorization
+		}
+		else
+		{
+			#region OPEN BROWSER FOR AUTHORIZATION
+			System.Diagnostics.Process browser;
+			bool windows = false;
+
+			// Open the browser.
+			if (Application.platform == RuntimePlatform.WindowsPlayer ||
+				Application.platform == RuntimePlatform.WindowsEditor)
+			{
+				windows = true;
+
+				System.Diagnostics.ProcessStartInfo startInfo =
+					new System.Diagnostics.ProcessStartInfo("IExplore.exe");
+				startInfo.Arguments = uri.ToString();
+
+				browser = new System.Diagnostics.Process();
+				browser.StartInfo = startInfo;
+				browser.Start();
+			}
+			else
+			{
+				browser = System.Diagnostics.Process.Start(uri.ToString());
+			}
+
+			// Authorization code will redirect to this server.
+			AuthRedirectionServer server = new AuthRedirectionServer();
+			server.StartServer(SERVER_PORT);
+
+			// Wait for authorization code.
+			while (!windows || !browser.HasExited)
+			{
+				if (server.AuthorizationCode != null)
+				{
+					browser.CloseMainWindow();
+					browser.Close();
+					break;
+				}
+				else
+					yield return null;
+			}
+
+			server.StopServer();
+
+			// Authorization rejected.
+			if (server.AuthorizationCode == null)
+			{
+				yield return new Exception("Authorization rejected.");
+				yield break;
+			}
+
+			// Get the access token by the authroization code.
+			var getAccessToken = GetAccessTokenByAuthorizationCode(server.AuthorizationCode);
+			{
+				while (getAccessToken.MoveNext())
+					yield return null;
+
+				if (getAccessToken.Current is Exception)
+				{
+					yield return getAccessToken.Current;
+					yield break;
+				}
+
+				var res = (TokenResponse)getAccessToken.Current;
+				if (res.error != null)
+				{
+					yield return new Exception(res.error);
+					yield break;
+				}
+
+				AccessToken = res.accessToken;
+				RefreshToken = res.refreshToken;
+			}
+
+			// And validate for email address.
+			var validate = ValidateToken(accessToken);
+			{
+				while (validate.MoveNext())
+					yield return null;
+
+				if (validate.Current is Exception)
+				{
+					yield return validate.Current;
+					yield break;
+				}
+
+				var res = (TokenInfoResponse)validate.Current;
+				if (res.error != null)
+				{
+					yield return new Exception(res.error);
+					yield break;
+				}
+
+				EMail = res.email;
+			}
+			#endregion
+		}
+	}
+
+	IEnumerator RefreshAccessToken()
+	{
+		var refresh = GetAccessTokenByRefreshToken(RefreshToken);
+		{
+			while (refresh.MoveNext())
+				yield return null;
+
+			if (refresh.Current is Exception)
+			{
+				yield return refresh.Current;
+				yield break;
+			}
+
+			var res = (TokenResponse)refresh.Current;
+			if (res.error != null)
+			{
+				yield return new Exception(res.error);
+				yield break;
+			}
+
+			AccessToken = res.accessToken;
+			RefreshToken = res.refreshToken;
+		}
+
+		// And validate for email address.
+		var validate = ValidateToken(accessToken);
+		{
+			while (validate.MoveNext())
+				yield return null;
+
+			if (validate.Current is Exception)
+			{
+				yield return validate.Current;
+				yield break;
+			}
+
+			var res = (TokenInfoResponse)validate.Current;
+			if (res.error != null)
+			{
+				yield return new Exception(res.error);
+				yield break;
+			}
+
+			EMail = res.email;
+		}
+	}
+
+	/// <summary>
+	/// Response of 'token'.
+	/// </summary>
+	struct TokenResponse
+	{
+		public string error;
+		public string accessToken;
+		public string refreshToken;
+		public int expiresIn;
+		public string tokenType;
+
+		public TokenResponse(Dictionary<string, object> json)
+		{
+			error = null;
+			accessToken = null;
+			refreshToken = null;
+			expiresIn = 0;
+			tokenType = null;
+
+			if (json.ContainsKey("error"))
+			{
+				error = json["error"] as string;
+			}
+			else
+			{
+				if (json.ContainsKey("access_token"))
+					accessToken = json["access_token"] as string;
+				if (json.ContainsKey("refresh_token"))
+					refreshToken = json["refresh_token"] as string;
+				if (json.ContainsKey("expires_in"))
+					expiresIn = (int)json["expires_in"];
+				if (json.ContainsKey("token_type"))
+					tokenType = json["token_type"] as string;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Get the access token by the authorization code.
+	/// </summary>
+	/// <param name="authorizationCode">Authorization code.</param>
+	/// <returns>TokenResponse or Exception for error.</returns>
+	IEnumerator GetAccessTokenByAuthorizationCode(string authorizationCode)
+	{
+		var request = new UnityWebRequest("https://accounts.google.com/o/oauth2/token");
+
+		request.method = "POST";
+		request.headers["Content-Type"] = "application/x-www-form-urlencoded";
+		request.postData = Encoding.UTF8.GetBytes(string.Format(
+			"code={0}&" +
+			"client_id={1}&" +
+			"client_secret={2}&" +
+			"redirect_uri={3}&" +
+			"grant_type=authorization_code",
+			authorizationCode, ClientID, ClientSecret, RedirectURI));
+
+		var response = request.GetResponse();
+		while (!response.isDone)
+			yield return null;
+
+		if (response.error != null)
+		{
+			yield return response.error;
+			yield break;
+		}
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception("GetAccessToken response parsing failed.");
+			yield break;
+		}
+
+		yield return new TokenResponse(json);
+	}
+
+	/// <summary>
+	/// Get the access code by the refresh token.
+	/// </summary>
+	/// <param name="refreshToken">Refresh token.</param>
+	/// <returns>TokenResponse or Exception for error.</returns>
+	IEnumerator GetAccessTokenByRefreshToken(string refreshToken)
+	{
+		var request = new UnityWebRequest("https://accounts.google.com/o/oauth2/token");
+
+		request.method = "POST";
+		request.headers["Content-Type"] = "application/x-www-form-urlencoded";
+		request.postData = Encoding.UTF8.GetBytes(string.Format(
+			"client_id={0}&" +
+			"client_secret={1}&" +
+			"refresh_token={2}&" +
+			"grant_type=refresh_token",
+			ClientID, ClientSecret, refreshToken));
+
+		var response = request.GetResponse();
+		while (!response.isDone)
+			yield return null;
+
+		if (response.error != null)
+		{
+			yield return response.error;
+			yield break;
+		}
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception("RefreshToken response parsing failed.");
+			yield break;
+		}
+
+		yield return new TokenResponse(json);
+	}
+
+	/// <summary>
+	/// Response of 'tokeninfo'.
+	/// </summary>
+	struct TokenInfoResponse
+	{
+		public string error;
+		public string audience;
+		public string scope;
+		public string userId;
+		public int expiresIn;
+		public string email;
+
+		public TokenInfoResponse(Dictionary<string, object> json)
+		{
+			error = null;
+			audience = null;
+			scope = null;
+			userId = null;
+			expiresIn = 0;
+			email = null;
+
+			if (json.ContainsKey("error"))
+			{
+				error = json["error"] as string;
+			}
+			else
+			{
+				if (json.ContainsKey("audience"))
+					audience = json["audience"] as string;
+				if (json.ContainsKey("scope"))
+					scope = json["scope"] as string;
+				if (json.ContainsKey("user_id"))
+					userId = json["user_id"] as string;
+				if (json.ContainsKey("expires_in"))
+					expiresIn = (int)json["expires_in"];
+				if (json.ContainsKey("email"))
+					email = json["email"] as string;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Validate the token and get informations.
+	/// </summary>
+	/// <param name="accessToken">Access token.</param>
+	/// <returns>TokenInfoResponse or Exception for error</returns>
+	static IEnumerator ValidateToken(string accessToken)
+	{
+		var request = new UnityWebRequest(
+				"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" + accessToken);
+		
+		var response = request.GetResponse();
+		while (!response.isDone)
+			yield return null;
+
+		if (response.error != null)
+		{
+			yield return response.error;
+			yield break;
+		}
+		
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception("TokenInfo response parsing failed.");
+			yield break;
+		}
+
+		yield return new TokenInfoResponse(json);
+	}
+
+	/// <summary>
+	/// Response of 'revoke'.
+	/// </summary>
+	struct RevokeResponse
+	{
+		string error;
+
+		public RevokeResponse(Dictionary<string, object> json)
+		{
+			if (json.ContainsKey("error"))
+				error = json["error"] as string;
+			else
+				error = null;
+		}
+	}
+
+	/// <summary>
+	/// Revoke a access token.
+	/// </summary>
+	/// <param name="token">Access token.</param>
+	/// <returns>RevokeResponse or Exception for error.</returns>
+	static IEnumerator RevokeToken(string token)
+	{
+		var request = new UnityWebRequest(
+			"https://accounts.google.com/o/oauth2/revoke?token=" + token);
+		
+		var response = request.GetResponse();
+		while (!response.isDone)
+			yield return null;
+
+		if (response.error != null)
+		{
+			yield return response.error;
+			yield break;
+		}
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception("RevokeToken response parsing failed.");
+			yield break;
+		}
+
+		yield return new RevokeResponse(json);
+	}
+	#endregion
 }

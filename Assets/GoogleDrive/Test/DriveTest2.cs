@@ -77,6 +77,28 @@ class DriveTest2 : MonoBehaviour
 			}
 		}
 	}
+
+	IEnumerator X()
+	{
+		yield return "hello";
+		yield return "wold";
+		yield break;
+		yield return "!";
+	}
+
+	IEnumerator Y()
+	{
+		IEnumerator x = X();
+		while (x.MoveNext())
+			Debug.Log("x: " + x.Current);
+		Debug.Log("last: " + x.Current);
+		yield return null;
+	}
+
+	struct AAA
+	{
+		public string aaa;
+	}
 	// -------------------------------
 
 	void Start()
@@ -85,8 +107,13 @@ class DriveTest2 : MonoBehaviour
 
 		//StartCoroutine(new A());
 
+		//StartCoroutine(Y()); // last: world
+
 		//GameObject o = new GameObject();
 		//o.AddComponent<DriveTest3>();
+
+		var a = new AAA();
+		Debug.Log(a.aaa == null ? "null" : a.aaa);
 	}
 
 	bool tasking = false;

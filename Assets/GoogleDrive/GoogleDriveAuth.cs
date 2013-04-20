@@ -5,8 +5,14 @@ using System.Text;
 using UnityEngine;
 using Midworld;
 
-namespace GoogleDrive
+namespace GoogleDriveOld
 {
+	class AuthException : Exception
+	{
+		public AuthException() : this(string.Empty) { }
+		public AuthException(string message) : base(message) { }
+	}
+
 	class Auth : UnityCoroutine
 	{
 		public static string clientID { get; set; }
@@ -174,7 +180,7 @@ namespace GoogleDrive
 		public static IEnumerator RefreshToken(string _refreshToken = null)
 		{
 			if (_refreshToken == null)
-				_refreshToken = GoogleDrive.Auth.refreshToken;
+				_refreshToken = GoogleDriveOld.Auth.refreshToken;
 			if (_refreshToken == null)
 				_refreshToken = PlayerPrefs.GetString("UnityGoogleDrive_RefreshToken", null);
 			if (_refreshToken == null)

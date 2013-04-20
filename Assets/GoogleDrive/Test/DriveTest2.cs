@@ -12,9 +12,81 @@ class DriveTest2 : MonoBehaviour
 
 	bool fontSet = false;
 
+	// -------------------------------
+	class A : IEnumerable, IEnumerator
+	{
+		IEnumerator main;
+
+		public A()
+		{
+			main = Main();
+		}
+
+		public A(bool a)
+		{
+			main = Main2();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return this;
+		}
+
+		public bool MoveNext()
+		{
+			//Debug.Log(this + " " + main);
+			return main.MoveNext();
+		}
+
+		public void Reset()
+		{
+			main.Reset();
+		}
+
+		public object Current
+		{
+			get
+			{
+				return main.Current;
+			}
+		}
+
+		IEnumerator Main()
+		{
+			int i = 0;
+			while (true)
+			{
+				Debug.Log("" + (i++));
+				yield return new WaitForSeconds(1);
+
+				//IEnumerator a = new A(true);
+				//while (a.MoveNext())
+				//    yield return a.Current;
+				foreach (var a in new A(true))
+					yield return a;
+			}
+		}
+
+		IEnumerator Main2()
+		{
+			int i = 0;
+			while (i < 3)
+			{
+				Debug.LogWarning("" + (i++));
+				yield return new WaitForSeconds(1);
+			}
+		}
+	}
+	// -------------------------------
+
 	void Start()
 	{
-		files = new List<GoogleDrive.Files.File>();
+		files = new List<GoogleDriveOld.Files.File>();
+
+		//StartCoroutine(new A());
+
+		//GameObject o = new GameObject();
+		//o.AddComponent<DriveTest3>();
 	}
 
 	bool tasking = false;
@@ -28,12 +100,13 @@ class DriveTest2 : MonoBehaviour
 		tasking = true;
 
 #if UNITY_EDITOR || UNITY_IPHONE
-		GoogleDrive.Auth.clientID =
+		GoogleDriveOld.Auth.clientID =
 			"897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
-		GoogleDrive.Auth.clientSecret =
+		GoogleDriveOld.Auth.clientSecret =
 			"tGNLbYnrdRO2hdFmwJAo5Fbt";
-		GoogleDrive.Auth.redirectURI =
-			"urn:ietf:wg:oauth:2.0:oob";
+		GoogleDriveOld.Auth.redirectURI =
+			//"urn:ietf:wg:oauth:2.0:oob";
+			"http://localhost:9270";
 #elif UNITY_ANDROID
 		GoogleDrive.Auth.clientID =
 			"897584417662-hs5soq7srr706129i8t8qq7b8cc7cgha.apps.googleusercontent.com";
@@ -43,54 +116,124 @@ class DriveTest2 : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR
-		if (GoogleDrive.Auth.HasAccessToken())
+		if (GoogleDriveOld.Auth.HasAccessToken())
 		{
-			if (GoogleDrive.Auth.IsTokenExpired())
+			if (GoogleDriveOld.Auth.IsTokenExpired())
 			{
-				if (GoogleDrive.Auth.CanRefreshToken())
+				if (GoogleDriveOld.Auth.CanRefreshToken())
 				{
-					yield return StartCoroutine(GoogleDrive.Auth.RefreshToken());
-					yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
+					yield return StartCoroutine(GoogleDriveOld.Auth.RefreshToken());
+					yield return StartCoroutine(GoogleDriveOld.Auth.ValidateToken());
 				}
 			}
 			else
 			{
-				yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
+				yield return StartCoroutine(GoogleDriveOld.Auth.ValidateToken());
 			}
 		}
 
-		if (!GoogleDrive.Auth.isAuthorized)
+		if (!GoogleDriveOld.Auth.isAuthorized)
 		{
 			// Open authorization page.
 			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo("IExplore.exe");
 			startInfo.Arguments = @"https://accounts.google.com/o/oauth2/auth?" +
 				@"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+" +
 				@"https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
-				@"redirect_uri=" + GoogleDrive.Auth.redirectURI + "&" +
+				@"redirect_uri=" + GoogleDriveOld.Auth.redirectURI + "&" +
 				@"response_type=code&" +
-				@"client_id=" + GoogleDrive.Auth.clientID;
+				@"client_id=" + GoogleDriveOld.Auth.clientID;
 
 			System.Diagnostics.Process browser = new System.Diagnostics.Process();
 			browser.StartInfo = startInfo;
 			browser.Start();
 
-			// Wait for authorization code.
-			string code = null;
+			//string url = @"https://accounts.google.com/o/oauth2/auth?" +
+			//    @"scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+" +
+			//    @"https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive&" +
+			//    @"redirect_uri=" + GoogleDriveOld.Auth.redirectURI + "&" +
+			//    @"response_type=code&" +
+			//    @"client_id=" + GoogleDriveOld.Auth.clientID;
+			//System.Diagnostics.Process browser = System.Diagnostics.Process.Start(url);
 
-			getCode = (copiedCode) =>
+			//try
+			//{
+			//    //browser.HasExited
+			//}
+			//catch (InvalidOperationException e)
+			//{
+			//}
+
+			//string a = "";
+			//while (!browser.HasExited)
+			//{
+			//    try
+			//    {
+			//        browser.Refresh();
+
+			//        if (browser.MainWindowTitle != a)
+			//        {
+			//            a = browser.MainWindowTitle;
+			//        }
+			//    }
+			//    catch (Exception e)
+			//    {
+			//        Debug.LogWarning(e);
+			//    }
+
+			//    //Debug.Log(a);
+			//    yield return null;
+			//}
+
+			//while (!browser.MainWindowTitle.Contains("Success code="))
+			//	yield return null;
+
+			//string title = browser.MainWindowTitle;
+			//string code = title.Substring(title.IndexOf("Success code=") + 13);
+
+			AuthRedirectionServer server = new AuthRedirectionServer();
+			server.StartServer(9270);
+
+			while (!browser.HasExited)
 			{
-				code = copiedCode;
+				if (server.AuthorizationCode != null)
+				{
+					browser.CloseMainWindow();
+					browser.Close();
+					break;
+				}
+				else
+					yield return null;
+			}
 
-				PlayerPrefs.SetString("GoogleDriveAuthCode", code);
+			server.StopServer();
 
-				getCode = null;
-			};
+			string code = server.AuthorizationCode;
 
-			while (code == null)
-				yield return null;
+			if (code == null)
+			{
+				Debug.LogError("auth failed.");
+				yield break;
+			}
 
-			yield return StartCoroutine(GoogleDrive.Auth.GetTokenByAuthorizationCode(code));
-			yield return StartCoroutine(GoogleDrive.Auth.ValidateToken()); // get the email address
+			PlayerPrefs.SetString("GoogleDriveAuthCode", code);
+			
+			//// Wait for authorization code.
+			//string code = null;
+
+			//getCode = (copiedCode) =>
+			//{
+			//    code = copiedCode;
+
+			//    PlayerPrefs.SetString("GoogleDriveAuthCode", code);
+
+			//    getCode = null;
+			//};
+
+			//while (code == null)
+			//    yield return null;
+
+			yield return StartCoroutine(GoogleDriveOld.Auth.GetTokenByAuthorizationCode(code));
+			yield return StartCoroutine(GoogleDriveOld.Auth.ValidateToken()); // get the email address
 		}
 #elif UNITY_ANDROID
 		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
@@ -98,9 +241,9 @@ class DriveTest2 : MonoBehaviour
 		yield return StartCoroutine(GoogleDrive.Auth.Authorize());
 #endif
 
-		if (GoogleDrive.Auth.isAuthorized)
+		if (GoogleDriveOld.Auth.isAuthorized)
 		{
-			Debug.Log("Authorization succeeded(" + GoogleDrive.Auth.selectedAccountName + ").");
+			Debug.Log("Authorization succeeded(" + GoogleDriveOld.Auth.selectedAccountName + ").");
 
 			//yield return StartCoroutine(GoogleDrive.Auth.ValidateToken());
 		}
@@ -118,7 +261,7 @@ class DriveTest2 : MonoBehaviour
 				var req = new Midworld.UnityWebRequest("https://www.googleapis.com/drive/v2/files?" +
 					"maxResults=1&" +
 					(nextPageToken != null ? "pageToken=" + nextPageToken : ""));
-				req.headers["Authorization"] = "Bearer " + GoogleDrive.Auth.token;
+				req.headers["Authorization"] = "Bearer " + GoogleDriveOld.Auth.token;
 
 				var res = req.GetResponse();
 
@@ -139,10 +282,10 @@ class DriveTest2 : MonoBehaviour
 		tasking = false;
 	}
 
-	List<GoogleDrive.Files.File> files = null;
+	List<GoogleDriveOld.Files.File> files = null;
 	Dictionary<string, Texture2D> iconTable = new Dictionary<string, Texture2D>();
 
-	void UpdateList(GoogleDrive.Files.List list)
+	void UpdateList(GoogleDriveOld.Files.List list)
 	{
 		files = list.items;
 
@@ -165,7 +308,7 @@ class DriveTest2 : MonoBehaviour
 
 		do
 		{
-			GoogleDrive.Files.List list = new GoogleDrive.Files.List(maxResults);
+			GoogleDriveOld.Files.List list = new GoogleDriveOld.Files.List(maxResults);
 
 			if (maxResults == -1)
 			{
@@ -181,11 +324,11 @@ class DriveTest2 : MonoBehaviour
 				}
 			}
 
-			if (list.error is GoogleDrive.AuthException)
+			if (list.error is GoogleDriveOld.AuthException)
 			{
 				yield return StartCoroutine(Auth());
 
-				if (GoogleDrive.Auth.isAuthorized)
+				if (GoogleDriveOld.Auth.isAuthorized)
 					continue;
 			}
 			else
@@ -216,7 +359,7 @@ class DriveTest2 : MonoBehaviour
 		tasking = true;
 
 		var request = new Midworld.UnityWebRequest(url);
-		request.headers["Authorization"] = "Bearer " + GoogleDrive.Auth.token;
+		request.headers["Authorization"] = "Bearer " + GoogleDriveOld.Auth.token;
 
 		var response = request.GetResponse();
 		yield return StartCoroutine(response);
@@ -247,7 +390,7 @@ class DriveTest2 : MonoBehaviour
 	{
 		tasking = true;
 
-		yield return StartCoroutine(GoogleDrive.Auth.RevokeToken());
+		yield return StartCoroutine(GoogleDriveOld.Auth.RevokeToken());
 
 		tasking = false;
 	}

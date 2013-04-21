@@ -74,21 +74,25 @@ class AuthRedirectionServer
 	/// </summary>
 	void Listen()
 	{
-		try
+		while (AuthorizationCode == null)
 		{
-			while (AuthorizationCode == null)
+			try
 			{
 				TcpClient client = server.AcceptTcpClient();
 #if UNITY_EDITOR
 				Debug.Log("Connected!");
 #endif
 				NetworkStream stream = client.GetStream();
+				stream.ReadTimeout = 2000;
+
+				//Thread.Sleep(100);
+
+				//stream.WriteByte(0);
+				//stream.Flush();
 
 				MemoryStream ms = new MemoryStream();
 				byte[] bytes = new byte[4096];
 				int readBytes;
-
-				stream.Flush();
 
 				while ((readBytes = stream.Read(bytes, 0, bytes.Length)) > 0)
 				{
@@ -127,12 +131,12 @@ class AuthRedirectionServer
 				client.Close();
 				ms.Dispose();
 			}
-		}
-		catch (Exception e)
-		{
+			catch (Exception e)
+			{
 #if UNITY_EDITOR
-			Debug.LogWarning(e);
+				Debug.LogWarning(e);
 #endif
+			}
 		}
 	}
 

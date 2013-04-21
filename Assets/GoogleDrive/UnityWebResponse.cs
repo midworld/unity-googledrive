@@ -168,12 +168,6 @@ namespace Midworld
 								}
 							}
 
-							// test---
-#if UNITY_EDITOR
-							UnityEngine.Debug.LogWarning(request.DumpHeaders());
-							UnityEngine.Debug.LogWarning(DumpHeaders());
-#endif
-
 							/* read body */
 							{
 								int contentLength = -1;
@@ -274,6 +268,16 @@ namespace Midworld
 								redirection++;
 								continue;
 							}
+
+							// test---
+#if UNITY_EDITOR
+							UnityEngine.Debug.LogWarning(request.DumpHeaders() +
+								"\r\n" +
+								(request.postData == null ? "" : Encoding.UTF8.GetString(request.postData)));
+							UnityEngine.Debug.LogWarning(DumpHeaders() +
+								"\r\n" +
+								this.text);
+#endif
 						}
 
 						stream.Close();

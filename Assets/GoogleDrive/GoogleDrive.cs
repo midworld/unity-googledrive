@@ -34,6 +34,17 @@ partial class GoogleDrive
 	}
 
 	#region AUTHORIZATION
+	bool isAuthorized = false;
+
+	/// <summary>
+	/// Is Google Drive authorized.
+	/// </summary>
+	public bool IsAuthorized
+	{
+		get { return isAuthorized; }
+		private set { isAuthorized = value; }
+	}
+
 	string accessToken = null;
 
 	/// <summary>
@@ -100,10 +111,40 @@ partial class GoogleDrive
 		}
 	}
 
+	string userAccount = null;
+
 	/// <summary>
 	/// User's E-Mail address.
 	/// </summary>
-	public string EMail { get; private set; }
+	public string UserAccount
+	{
+		get
+		{
+			if (userAccount == null)
+			{
+				int key = ClientID.GetHashCode();
+				userAccount = PlayerPrefs.GetString("UnityGoogleDrive_UserAccount_" + key, "");
+			}
+
+			return userAccount;
+		}
+		private set
+		{
+			if (userAccount != value)
+			{
+				userAccount = value;
+
+				int key = ClientID.GetHashCode();
+
+				if (userAccount != null)
+					PlayerPrefs.SetString("UnityGoogleDrive_UserAccount_" + key, userAccount);
+				else
+					PlayerPrefs.DeleteKey("UnityGoogleDrive_UserAccount_" + key);
+			}
+		}
+	}
+
+	//int expiresIn = 0;
 
 	/// <summary>
 	/// Start authorization.
@@ -142,6 +183,9 @@ partial class GoogleDrive
 				yield return null;
 
 			yield return routine.Current;
+
+			if (AccessToken != "")
+				IsAuthorized = true;
 		}
 		else
 		{
@@ -151,11 +195,20 @@ partial class GoogleDrive
 				while (validate.MoveNext())
 					yield return null;
 
+				if (validate.Current is Exception)
+				{
+					yield return validate.Current;
+					yield break;
+				}
+
 				var res = (TokenInfoResponse)validate.Current;
 
 				// Require re-authorization.
 				if (res.error != null)
 				{
+					// Remove saved access token.
+					AccessToken = null;
+
 					if (RefreshToken != "")
 					{
 						// Try refresh token.
@@ -164,7 +217,7 @@ partial class GoogleDrive
 							yield return null;
 					}
 
-					// No refresh token or failed.
+					// No refresh token or refresh failed.
 					if (AccessToken == "")
 					{
 						// Open browser and authorization.
@@ -174,9 +227,17 @@ partial class GoogleDrive
 
 						yield return routine.Current;
 					}
-				}
 
-				EMail = res.email;
+					// If access token is available, authorization is succeeded.
+					if (AccessToken != "")
+						IsAuthorized = true;
+				}
+				else
+				{
+					// Validating succeeded.
+					IsAuthorized = true;
+					UserAccount = res.email;
+				}
 			}
 		}
 #endif
@@ -184,6 +245,24 @@ partial class GoogleDrive
 		yield break;
 	}
 
+	public IEnumerator Unauthorize()
+	{
+		IsAuthorized = false;
+		
+		var revoke = RevokeToken(AccessToken);
+		while (revoke.MoveNext())
+			yield return null;
+
+		AccessToken = null;
+		RefreshToken = null;
+
+		yield return revoke.Current;
+	}
+
+	/// <summary>
+	/// Get access token through Google login in web browser.
+	/// </summary>
+	/// <returns></returns>
 	IEnumerator GetAuthorizationCodeAndAccessToken()
 	{
 		// Google authorization URL
@@ -294,12 +373,16 @@ partial class GoogleDrive
 					yield break;
 				}
 
-				EMail = res.email;
+				UserAccount = res.email;
 			}
 			#endregion
 		}
 	}
 
+	/// <summary>
+	/// Get access token by the refresh token.
+	/// </summary>
+	/// <returns>null or Exception for error.</returns>
 	IEnumerator RefreshAccessToken()
 	{
 		var refresh = GetAccessTokenByRefreshToken(RefreshToken);
@@ -321,7 +404,6 @@ partial class GoogleDrive
 			}
 
 			AccessToken = res.accessToken;
-			RefreshToken = res.refreshToken;
 		}
 
 		// And validate for email address.
@@ -343,7 +425,7 @@ partial class GoogleDrive
 				yield break;
 			}
 
-			EMail = res.email;
+			UserAccount = res.email;
 		}
 	}
 
@@ -577,13 +659,10 @@ partial class GoogleDrive
 		JsonReader reader = new JsonReader(response.text);
 		var json = reader.Deserialize<Dictionary<string, object>>();
 
-		if (json == null)
-		{
-			yield return new Exception("RevokeToken response parsing failed.");
-			yield break;
-		}
-
-		yield return new RevokeResponse(json);
+		if (json == null) // no response is success.
+			yield return new RevokeResponse(); // error is null.
+		else
+			yield return new RevokeResponse(json);
 	}
 	#endregion
 }

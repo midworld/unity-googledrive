@@ -31,7 +31,7 @@ PlayerSettings:
   use32BitDisplayBuffer: 0
   use24BitDepthBuffer: 0
   defaultIsFullScreen: 0
-  runInBackground: 0
+  runInBackground: 1
   captureSingleScreen: 0
   Override IPod Music: 0
   usePlayerLog: 1

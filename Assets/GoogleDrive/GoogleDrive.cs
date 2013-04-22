@@ -18,4 +18,19 @@ partial class GoogleDrive
 	/// </summary>
 	/// <remarks>Android doesn't need this value.</remarks>
 	public string ClientSecret { get; set; }
+
+	/// <summary>
+	/// Success result.
+	/// </summary>
+	class AsyncSuccess { }
+
+	/// <summary>
+	/// Check the async operation is done.
+	/// </summary>
+	/// <param name="async">Async operation.</param>
+	/// <returns>True if the operation is done.</returns>
+	public static bool IsDone(IEnumerator async)
+	{
+		return (async.Current is AsyncSuccess || async.Current is Exception);
+	}
 }

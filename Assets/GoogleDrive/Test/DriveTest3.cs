@@ -23,6 +23,10 @@ public class DriveTest3 : MonoBehaviour
 
 		var authorization = drive.Authorize();
 		yield return StartCoroutine(authorization);
+		
+		//StartCoroutine(authorization);
+		//while (!GoogleDrive.IsDone(authorization))
+		//    yield return null;
 
 		if (authorization.Current is Exception)
 			Debug.LogWarning(authorization.Current as Exception);

@@ -132,12 +132,15 @@ partial class GoogleDrive
 		}
 	}
 
-	//int expiresIn = 0;
+	/// <summary>
+	/// Access token lifetime.
+	/// </summary>
+	DateTime expiresIn = DateTime.MaxValue;
 
 	/// <summary>
 	/// Start authorization.
 	/// </summary>
-	/// <returns>some value(maybe null) or Exception for error.</returns>
+	/// <returns>AsyncSuccess or Exception for error.</returns>
 	public IEnumerator Authorize()
 	{
 		#region CHECK CLIENT ID AND SECRET
@@ -171,10 +174,20 @@ partial class GoogleDrive
 			while (routine.MoveNext())
 				yield return null;
 
-			yield return routine.Current;
-
-			if (AccessToken != "")
+			if (routine.Current is Exception)
+			{
+				yield return routine.Current;
+				yield break;
+			}
+			else if (AccessToken == "")
+			{
+				yield return new Exception("Authorization failed.");
+				yield break;
+			}
+			else
+			{
 				IsAuthorized = true;
+			}
 		}
 		else
 		{
@@ -214,26 +227,41 @@ partial class GoogleDrive
 						while (routine.MoveNext())
 							yield return null;
 
-						yield return routine.Current;
+						if (routine.Current is Exception)
+						{
+							yield return routine.Current;
+							yield break;
+						}
 					}
 
 					// If access token is available, authorization is succeeded.
 					if (AccessToken != "")
 						IsAuthorized = true;
+					else
+					{
+						yield return new Exception("Authorization failed.");
+						yield break;
+					}
 				}
 				else
 				{
 					// Validating succeeded.
 					IsAuthorized = true;
 					UserAccount = res.email;
+
+					expiresIn = DateTime.Now + new TimeSpan(0, 0, res.expiresIn);
 				}
 			}
 		}
 #endif
 
-		yield break;
+		yield return new AsyncSuccess();
 	}
 
+	/// <summary>
+	/// Unauthorize and remove the saved session.
+	/// </summary>
+	/// <returns>AsyncSuccess or Exception for error.</returns>
 	public IEnumerator Unauthorize()
 	{
 		IsAuthorized = false;
@@ -246,14 +274,22 @@ partial class GoogleDrive
 		RefreshToken = null;
 
 		if (revoke.Current is Exception)
+		{
 			yield return revoke.Current;
+			yield break;
+		}
 		else
 		{
 			var res = (RevokeResponse)revoke.Current;
-			
+
 			if (res.error != null)
+			{
 				yield return new Exception(res.error);
+				yield break;
+			}
 		}
+
+		yield return new AsyncSuccess();
 	}
 
 	/// <summary>

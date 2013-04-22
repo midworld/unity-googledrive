@@ -14,19 +14,19 @@ namespace Midworld
 
 		public Hashtable headers { get; protected set; }
 
-		private byte[] _postData = null;
+		private byte[] _body = null;
 
-		public byte[] postData
+		public byte[] body
 		{
 			get
 			{
-				return _postData;
+				return _body;
 			}
 			set
 			{
-				_postData = value;
+				_body = value;
 
-				if (_postData != null)
+				if (_body != null)
 					this.headers["Content-Length"] = value.Length.ToString();
 				else
 					this.headers.Remove("Content-Length");

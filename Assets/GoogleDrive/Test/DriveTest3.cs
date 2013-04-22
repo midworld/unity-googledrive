@@ -20,6 +20,7 @@ public class DriveTest3 : MonoBehaviour
 		drive = new GoogleDrive();
 		drive.ClientID = "897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
 		drive.ClientSecret = "tGNLbYnrdRO2hdFmwJAo5Fbt";
+		drive.RootDirectoryName = "UnityGoogleDriveTest";
 
 		var authorization = drive.Authorize();
 		yield return StartCoroutine(authorization);
@@ -32,6 +33,9 @@ public class DriveTest3 : MonoBehaviour
 			Debug.LogWarning(authorization.Current as Exception);
 		else
 			Debug.Log("User Account: " + drive.UserAccount);
+
+		var insert = drive.InsertFile();
+		yield return StartCoroutine(insert);
 
 		initInProgress = false;
 	}

@@ -99,11 +99,11 @@ namespace Midworld
 								}
 							}
 
-							if (request.postData != null)
+							if (request.body != null)
 							{
 								writer.Write(Encoding.UTF8.GetBytes("Content-Length:" +
-									request.postData.Length + "\r\n\r\n"));
-								writer.Write(request.postData);
+									request.body.Length + "\r\n\r\n"));
+								writer.Write(request.body);
 							}
 							else
 							{
@@ -273,7 +273,7 @@ namespace Midworld
 #if UNITY_EDITOR
 							UnityEngine.Debug.LogWarning(request.DumpHeaders() +
 								"\r\n" +
-								(request.postData == null ? "" : Encoding.UTF8.GetString(request.postData)));
+								(request.body == null ? "" : Encoding.UTF8.GetString(request.body)));
 							UnityEngine.Debug.LogWarning(DumpHeaders() +
 								"\r\n" +
 								this.text);

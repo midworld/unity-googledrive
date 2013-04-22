@@ -510,7 +510,7 @@ partial class GoogleDrive
 
 		request.method = "POST";
 		request.headers["Content-Type"] = "application/x-www-form-urlencoded";
-		request.postData = Encoding.UTF8.GetBytes(string.Format(
+		request.body = Encoding.UTF8.GetBytes(string.Format(
 			"code={0}&" +
 			"client_id={1}&" +
 			"client_secret={2}&" +
@@ -551,7 +551,7 @@ partial class GoogleDrive
 
 		request.method = "POST";
 		request.headers["Content-Type"] = "application/x-www-form-urlencoded";
-		request.postData = Encoding.UTF8.GetBytes(string.Format(
+		request.body = Encoding.UTF8.GetBytes(string.Format(
 			"client_id={0}&" +
 			"client_secret={1}&" +
 			"refresh_token={2}&" +

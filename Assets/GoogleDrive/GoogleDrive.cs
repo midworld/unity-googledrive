@@ -20,6 +20,11 @@ partial class GoogleDrive
 	public string ClientSecret { get; set; }
 
 	/// <summary>
+	/// The root directory name in Google Drive.
+	/// </summary>
+	public string RootDirectoryName { get; set; }
+
+	/// <summary>
 	/// Success result.
 	/// </summary>
 	class AsyncSuccess { }

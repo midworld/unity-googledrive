@@ -1,5 +1,32 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text;
+using JsonFx.Json;
+using Midworld;
+
+partial class GoogleDrive
+{
+	public IEnumerator InsertFile()
+	{
+		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files");
+		request.method = "POST";
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+		request.headers["Content-Type"] = "application/json";
+
+		Dictionary<string, string> data = new Dictionary<string, string>();
+		data["title"] = "hello";
+		data["mimeType"] = "application/vnd.google-apps.folder";
+
+		request.body = Encoding.UTF8.GetBytes(JsonWriter.Serialize(data));
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		yield return new AsyncSuccess();
+	}
+}
 
 namespace GoogleDriveOld
 {

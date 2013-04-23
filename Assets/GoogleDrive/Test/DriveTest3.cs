@@ -79,8 +79,7 @@ public class DriveTest3 : MonoBehaviour
 			}
 		}
 
-		if (appDataId != null)
-			yield return StartCoroutine(drive.InsertFile(appDataId));
+		yield return StartCoroutine(drive.InsertFile(appDataId));
 
 		yield return StartCoroutine(drive.ListFiles());
 

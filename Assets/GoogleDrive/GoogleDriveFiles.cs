@@ -17,18 +17,30 @@ partial class GoogleDrive
 		Dictionary<string, object> data = new Dictionary<string, object>();
 		data["title"] = "world";
 		data["mimeType"] = "application/vnd.google-apps.folder";
-		//if (parent != null)
-		//    data["parents"] = new List<string> { parent };
-		data["parents"] = new List<Dictionary<string, string>> { 
-			new Dictionary<string, string> 
+		if (parent != null)
+		{
+			data["parents"] = new List<Dictionary<string, string>>
 			{
-				{ "id", "appdata" }
-			},
-			//new Dictionary<string, string> 
-			//{
-			//    { "id", "root" }
-			//}
-		};
+				new Dictionary<string, string> 
+				{
+					{ "id", parent }
+				},
+			};
+		}
+		else
+		{
+			data["parents"] = new List<Dictionary<string, string>> 
+			{ 
+				new Dictionary<string, string> 
+				{
+					{ "id", "appdata" }
+				},
+				//new Dictionary<string, string> 
+				//{
+				//    { "id", "root" }
+				//}
+			};
+		}
 
 		request.body = Encoding.UTF8.GetBytes(JsonWriter.Serialize(data));
 

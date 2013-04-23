@@ -7,18 +7,59 @@ using Midworld;
 
 partial class GoogleDrive
 {
-	public IEnumerator InsertFile()
+	public IEnumerator InsertFile(string parent)
 	{
 		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files");
 		request.method = "POST";
 		request.headers["Authorization"] = "Bearer " + AccessToken;
 		request.headers["Content-Type"] = "application/json";
 
-		Dictionary<string, string> data = new Dictionary<string, string>();
-		data["title"] = "hello";
+		Dictionary<string, object> data = new Dictionary<string, object>();
+		data["title"] = "world";
 		data["mimeType"] = "application/vnd.google-apps.folder";
+		//if (parent != null)
+		//    data["parents"] = new List<string> { parent };
+		data["parents"] = new List<Dictionary<string, string>> { 
+			new Dictionary<string, string> 
+			{
+				{ "id", "appdata" }
+			},
+			//new Dictionary<string, string> 
+			//{
+			//    { "id", "root" }
+			//}
+		};
 
 		request.body = Encoding.UTF8.GetBytes(JsonWriter.Serialize(data));
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		yield return new AsyncSuccess();
+	}
+
+	public IEnumerator AppData()
+	{
+		var request = new UnityWebRequest(
+			new Uri("https://www.googleapis.com/drive/v2/files/appdata"));
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		yield return new AsyncSuccess(json);
+	}
+
+	public IEnumerator ListFiles()
+	{
+		var request = new UnityWebRequest(
+			new Uri("https://www.googleapis.com/drive/v2/files?q='appdata' in parents"));
+		request.headers["Authorization"] = "Bearer " + AccessToken;
 
 		var response = new UnityWebResponse(request);
 		while (!response.isDone)

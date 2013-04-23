@@ -27,7 +27,16 @@ partial class GoogleDrive
 	/// <summary>
 	/// Success result.
 	/// </summary>
-	class AsyncSuccess { }
+	public class AsyncSuccess
+	{
+		public object Result { get; private set; }
+
+		public AsyncSuccess() : this(null) { }
+		public AsyncSuccess(object o)
+		{
+			Result = o;
+		}
+	}
 
 	/// <summary>
 	/// Check the async operation is done.

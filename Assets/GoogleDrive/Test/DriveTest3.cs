@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DriveTest3 : MonoBehaviour
@@ -9,6 +10,32 @@ public class DriveTest3 : MonoBehaviour
 	void Start()
 	{
 		StartCoroutine(InitGoogleDrive());
+
+		#region ESCAPE
+		//string a = @"title contains '한글'";
+		//byte[] aa = System.Text.Encoding.UTF8.GetBytes(a);
+		//string b = "";
+		//for (int i = 0; i < aa.Length; i++)
+		//{
+		//    char c = (char)aa[i];
+
+		//    if ('a' <= c && c <= 'z' ||
+		//        'A' <= c && c <= 'Z' ||
+		//        '0' <= c && c <= '9')
+		//    {
+		//        b += c;
+		//    }
+		//    else if (c == ' ')
+		//    {
+		//        b += '+';
+		//    }
+		//    else
+		//    {
+		//        b += "%" + aa[i].ToString("x2");
+		//    }
+		//}
+		//Debug.Log(b);
+		#endregion
 	}
 
 	bool initInProgress = false;
@@ -34,8 +61,28 @@ public class DriveTest3 : MonoBehaviour
 		else
 			Debug.Log("User Account: " + drive.UserAccount);
 
-		var insert = drive.InsertFile();
-		yield return StartCoroutine(insert);
+		var appData = drive.AppData();
+		yield return StartCoroutine(appData);
+
+		string appDataId = null;
+
+		if (appData.Current is GoogleDrive.AsyncSuccess)
+		{
+			var result = (appData.Current as GoogleDrive.AsyncSuccess).Result;
+
+			if (result is Dictionary<string, object>)
+			{
+				var json = result as Dictionary<string, object>;
+
+				Debug.Log(json["id"]);
+				appDataId = json["id"] as string;
+			}
+		}
+
+		if (appDataId != null)
+			yield return StartCoroutine(drive.InsertFile(appDataId));
+
+		yield return StartCoroutine(drive.ListFiles());
 
 		initInProgress = false;
 	}

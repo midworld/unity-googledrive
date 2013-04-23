@@ -303,6 +303,7 @@ partial class GoogleDrive
 			"scope=" +
 				"https://www.googleapis.com/auth/drive.file" +
 				" https://www.googleapis.com/auth/userinfo.email" +
+				" https://www.googleapis.com/auth/drive.appdata" +
 			"&response_type=code" +
 			"&redirect_uri=" + RedirectURI +
 			"&client_id=" + ClientID);

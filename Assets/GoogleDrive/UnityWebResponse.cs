@@ -168,6 +168,10 @@ namespace Midworld
 								}
 							}
 
+							UnityEngine.Debug.Log(DumpHeaders() +
+								"\r\n" +
+								"----");
+
 							/* read body */
 							{
 								int contentLength = -1;
@@ -226,16 +230,7 @@ namespace Midworld
 								}
 								else
 								{
-									MemoryStream ms = new MemoryStream(4096);
-									byte[] buffer = new byte[4096];
-									int read;
-
-									while ((read = bufferedStream.Read(buffer, 0, buffer.Length)) > 0)
-									{
-										ms.Write(buffer, 0, read);
-									}
-
-									this.bytes = ms.ToArray();
+									this.bytes = new byte[0];
 								}
 							}
 

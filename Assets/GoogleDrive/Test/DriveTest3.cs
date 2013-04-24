@@ -51,7 +51,7 @@ public class DriveTest3 : MonoBehaviour
 
 		var authorization = drive.Authorize();
 		yield return StartCoroutine(authorization);
-		
+
 		//StartCoroutine(authorization);
 		//while (!GoogleDrive.IsDone(authorization))
 		//    yield return null;
@@ -61,27 +61,36 @@ public class DriveTest3 : MonoBehaviour
 		else
 			Debug.Log("User Account: " + drive.UserAccount);
 
-		var appData = drive.AppData();
-		yield return StartCoroutine(appData);
+		//// add a folder
+		//{
+		//    var i = drive.InsertFolder("kekeke", drive.AppData.ID);
+		//    yield return StartCoroutine(i);
+		//    Debug.Log("" + GoogleDrive.GetResult<GoogleDrive.File>(i));
+		//}
 
-		string appDataId = null;
+		var listFiles = drive.ListFiles(drive.AppData.ID);
+		yield return StartCoroutine(listFiles);
+		var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 
-		if (appData.Current is GoogleDrive.AsyncSuccess)
+		if (files != null)
 		{
-			var result = (appData.Current as GoogleDrive.AsyncSuccess).Result;
+			bool first = false;
 
-			if (result is Dictionary<string, object>)
+			foreach (var file in files)
 			{
-				var json = result as Dictionary<string, object>;
+				Debug.Log(file);
 
-				Debug.Log(json["id"]);
-				appDataId = json["id"] as string;
+				if (!first)
+				{
+					first = true;
+					//yield return StartCoroutine(drive.DeleteFile(file.ID));
+				}
 			}
 		}
-
-		yield return StartCoroutine(drive.InsertFile(appDataId));
-
-		yield return StartCoroutine(drive.ListFiles());
+		else
+		{
+			Debug.LogError(listFiles.Current);
+		}
 
 		initInProgress = false;
 	}

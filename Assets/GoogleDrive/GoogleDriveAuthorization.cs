@@ -254,6 +254,20 @@ partial class GoogleDrive
 			}
 		}
 #endif
+		// Get AppData folder.
+		var getAppData = GetFile("appdata");
+		while (getAppData.MoveNext())
+			yield return null;
+
+		if (getAppData.Current is AsyncSuccess)
+		{
+			AppData = (getAppData.Current as AsyncSuccess).Result as File;
+		}
+		else
+		{
+			Debug.LogWarning("Cannot get the AppData folder: " + 
+				getAppData.Current);
+		}
 
 		yield return new AsyncSuccess();
 	}

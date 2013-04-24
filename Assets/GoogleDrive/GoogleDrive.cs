@@ -39,6 +39,20 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
+	/// Get the result from AsyncSuccess.
+	/// </summary>
+	/// <typeparam name="T">Type of result.</typeparam>
+	/// <param name="async">Async routine.</param>
+	/// <returns>Result or null.</returns>
+	public static T GetResult<T>(IEnumerator async)
+	{
+		if (async.Current is AsyncSuccess)
+			return (T)(async.Current as AsyncSuccess).Result;
+		else
+			return default(T);
+	}
+
+	/// <summary>
 	/// Check the async operation is done.
 	/// </summary>
 	/// <param name="async">Async operation.</param>

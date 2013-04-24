@@ -51,7 +51,7 @@ partial class GoogleDrive
 		yield return new AsyncSuccess();
 	}
 
-	public IEnumerator AppData()
+	public IEnumerator GetAppData()
 	{
 		var request = new UnityWebRequest(
 			new Uri("https://www.googleapis.com/drive/v2/files/appdata"));
@@ -67,7 +67,7 @@ partial class GoogleDrive
 		yield return new AsyncSuccess(json);
 	}
 
-	public IEnumerator ListFiles()
+	public IEnumerator ListAppDataFiles()
 	{
 		var request = new UnityWebRequest(
 			new Uri("https://www.googleapis.com/drive/v2/files?q='appdata' in parents"));

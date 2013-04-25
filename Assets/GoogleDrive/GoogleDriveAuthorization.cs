@@ -478,6 +478,22 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
+	/// If the access token is expired then refresh it.
+	/// </summary>
+	/// <returns>nothing or Exception for error.</returns>
+	IEnumerator CheckExpiration()
+	{
+		if (DateTime.Now >= expiresIn)
+		{
+			var refresh = RefreshAccessToken();
+			while (refresh.MoveNext())
+				yield return null;
+
+			yield return refresh.Current;
+		}
+	}
+
+	/// <summary>
 	/// Response of 'token'.
 	/// </summary>
 	struct TokenResponse

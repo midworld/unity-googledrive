@@ -14,9 +14,9 @@ partial class GoogleDrive
 	{
 		public string ID { get; private set; }
 
-		public string Title { get; private set; }
-		public string MimeType { get; private set; }
-		public string Description { get; private set; }
+		public string Title { get; set; }
+		public string MimeType { get; set; }
+		public string Description { get; set; }
 
 		public DateTime CreatedDate { get; private set; }
 		public DateTime ModifiedDate { get; private set; }
@@ -27,7 +27,7 @@ partial class GoogleDrive
 		public string MD5Checksum { get; private set; }
 		public long FileSize { get; private set; }
 
-		public List<string> Parents { get; private set; }
+		public List<string> Parents { get; set; }
 
 		public bool IsFolder
 		{
@@ -71,6 +71,25 @@ partial class GoogleDrive
 			}
 		}
 
+		public Dictionary<string, object> ToJSON()
+		{
+			var json = new Dictionary<string, object>();
+			
+			json["title"] = Title;
+			json["mimeType"] = MimeType;
+			json["description"] = Description;
+
+			var parents = new Dictionary<string, object>[Parents.Count];
+			for (int i = 0; i < Parents.Count; i++)
+			{
+				parents[i] = new Dictionary<string, object>();
+				parents[i]["id"] = Parents[i];
+			}
+			json["parent"] = parents;
+
+			return json;
+		}
+
 		public override string ToString()
 		{
 			return string.Format("{{ title: {0}, mimeType: {1}, fileSize: {2}, id: {3}, parents: [{4}] }}",
@@ -91,6 +110,18 @@ partial class GoogleDrive
 	/// <returns>AsyncSuccess with a File or Exception for error.</returns>
 	public IEnumerator GetFile(string id)
 	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
 		var request = new UnityWebRequest(
 			new Uri("https://www.googleapis.com/drive/v2/files/" + id));
 		request.headers["Authorization"] = "Bearer " + AccessToken;
@@ -136,6 +167,18 @@ partial class GoogleDrive
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
 	public IEnumerator ListFilesByQueary(string query)
 	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
 		var request = new UnityWebRequest(
 			new Uri("https://www.googleapis.com/drive/v2/files?q=" + query));
 		request.headers["Authorization"] = "Bearer " + AccessToken;
@@ -192,6 +235,18 @@ partial class GoogleDrive
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
 	public IEnumerator InsertFolder(string title, string parentId)
 	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
 		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files");
 		request.method = "POST";
 		request.headers["Authorization"] = "Bearer " + AccessToken;
@@ -240,6 +295,18 @@ partial class GoogleDrive
 	/// <returns>AsyncSuccess or Exception for error.</returns>
 	public IEnumerator DeleteFile(string id)
 	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
 		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + id);
 		request.method = "DELETE";
 		request.headers["Authorization"] = "Bearer " + AccessToken;
@@ -258,6 +325,55 @@ partial class GoogleDrive
 			yield break;
 		}
 
-		yield return new AsyncSuccess(); 
+		yield return new AsyncSuccess();
+	}
+
+	/// <summary>
+	/// <para>Update file's metadata.</para>
+	/// <para>You can change Title, Description, MimeType and Parents.</para>
+	/// </summary>
+	/// <param name="file">Updated file.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator UpdateFile(File file)
+	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
+		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + file.ID);
+		request.method = "PUT";
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+		request.headers["Content-Type"] = "application/json";
+
+		string metadata = JsonWriter.Serialize(file.ToJSON());
+		request.body = Encoding.UTF8.GetBytes(metadata);
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception(-1, "UpdateFile response parsing failed.");
+			yield break;
+		}
+		else if (json.ContainsKey("error"))
+		{
+			yield return GetError(json);
+			yield break;
+		}
+
+		yield return new AsyncSuccess(new File(json));
 	}
 }

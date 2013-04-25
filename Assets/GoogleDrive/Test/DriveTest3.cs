@@ -84,6 +84,10 @@ public class DriveTest3 : MonoBehaviour
 				{
 					first = true;
 					//yield return StartCoroutine(drive.DeleteFile(file.ID));
+
+					//file.Title = "world";
+					//file.Description = null;
+					//yield return StartCoroutine(drive.UpdateFile(file));
 				}
 			}
 		}

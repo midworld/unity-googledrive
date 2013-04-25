@@ -148,7 +148,7 @@ partial class GoogleDrive
 		{
 			if (ClientID == null)
 			{
-				yield return new Exception("ClientID is null.");
+				yield return new Exception(-1, "ClientID is null.");
 				yield break;
 			}
 		}
@@ -156,7 +156,7 @@ partial class GoogleDrive
 		{
 			if (ClientID == null || ClientSecret == null)
 			{
-				yield return new Exception("ClientID or ClientSecret is null.");
+				yield return new Exception(-1, "ClientID or ClientSecret is null.");
 				yield break;
 			}
 		}
@@ -181,7 +181,7 @@ partial class GoogleDrive
 			}
 			else if (AccessToken == "")
 			{
-				yield return new Exception("Authorization failed.");
+				yield return new Exception(-1, "Authorization failed.");
 				yield break;
 			}
 			else
@@ -239,7 +239,7 @@ partial class GoogleDrive
 						IsAuthorized = true;
 					else
 					{
-						yield return new Exception("Authorization failed.");
+						yield return new Exception(-1, "Authorization failed.");
 						yield break;
 					}
 				}
@@ -298,7 +298,7 @@ partial class GoogleDrive
 
 			if (res.error != null)
 			{
-				yield return new Exception(res.error);
+				yield return res.error;
 				yield break;
 			}
 		}
@@ -375,7 +375,7 @@ partial class GoogleDrive
 			// Authorization rejected.
 			if (server.AuthorizationCode == null)
 			{
-				yield return new Exception("Authorization rejected.");
+				yield return new Exception(-1, "Authorization rejected.");
 				yield break;
 			}
 
@@ -394,7 +394,7 @@ partial class GoogleDrive
 				var res = (TokenResponse)getAccessToken.Current;
 				if (res.error != null)
 				{
-					yield return new Exception(res.error);
+					yield return res.error;
 					yield break;
 				}
 
@@ -417,7 +417,7 @@ partial class GoogleDrive
 				var res = (TokenInfoResponse)validate.Current;
 				if (res.error != null)
 				{
-					yield return new Exception(res.error);
+					yield return res.error;
 					yield break;
 				}
 
@@ -447,7 +447,7 @@ partial class GoogleDrive
 			var res = (TokenResponse)refresh.Current;
 			if (res.error != null)
 			{
-				yield return new Exception(res.error);
+				yield return res.error;
 				yield break;
 			}
 
@@ -469,7 +469,7 @@ partial class GoogleDrive
 			var res = (TokenInfoResponse)validate.Current;
 			if (res.error != null)
 			{
-				yield return new Exception(res.error);
+				yield return res.error;
 				yield break;
 			}
 
@@ -482,7 +482,7 @@ partial class GoogleDrive
 	/// </summary>
 	struct TokenResponse
 	{
-		public string error;
+		public Exception error;
 		public string accessToken;
 		public string refreshToken;
 		public int expiresIn;
@@ -498,7 +498,7 @@ partial class GoogleDrive
 
 			if (json.ContainsKey("error"))
 			{
-				error = json["error"] as string;
+				error = GetError(json);
 			}
 			else
 			{
@@ -548,7 +548,7 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("GetAccessToken response parsing failed.");
+			yield return new Exception(-1, "GetAccessToken response parsing failed.");
 			yield break;
 		}
 
@@ -588,7 +588,7 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("RefreshToken response parsing failed.");
+			yield return new Exception(-1, "RefreshToken response parsing failed.");
 			yield break;
 		}
 
@@ -600,7 +600,7 @@ partial class GoogleDrive
 	/// </summary>
 	struct TokenInfoResponse
 	{
-		public string error;
+		public Exception error;
 		public string audience;
 		public string scope;
 		public string userId;
@@ -618,7 +618,7 @@ partial class GoogleDrive
 
 			if (json.ContainsKey("error"))
 			{
-				error = json["error"] as string;
+				error = GetError(json);
 			}
 			else
 			{
@@ -644,7 +644,7 @@ partial class GoogleDrive
 	static IEnumerator ValidateToken(string accessToken)
 	{
 		var request = new UnityWebRequest(
-				"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" + accessToken);
+			"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" + accessToken);
 
 		var response = request.GetResponse();
 		while (!response.isDone)
@@ -661,7 +661,7 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("TokenInfo response parsing failed.");
+			yield return new Exception(-1, "TokenInfo response parsing failed.");
 			yield break;
 		}
 
@@ -673,12 +673,12 @@ partial class GoogleDrive
 	/// </summary>
 	struct RevokeResponse
 	{
-		public string error;
+		public Exception error;
 
 		public RevokeResponse(Dictionary<string, object> json)
 		{
 			if (json.ContainsKey("error"))
-				error = json["error"] as string;
+				error = GetError(json);
 			else
 				error = null;
 		}

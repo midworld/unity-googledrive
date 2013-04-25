@@ -104,12 +104,12 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("GetFile response parsing failed.");
+			yield return new Exception(-1, "GetFile response parsing failed.");
 			yield break;
 		}
 		else if (json.ContainsKey("error"))
 		{
-			yield return new Exception(GetErrorString(json));
+			yield return GetError(json);
 			yield break;
 		}
 
@@ -149,12 +149,12 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("ListFiles response parsing failed.");
+			yield return new Exception(-1, "ListFiles response parsing failed.");
 			yield break;
 		}
 		else if (json.ContainsKey("error"))
 		{
-			yield return new Exception(GetErrorString(json));
+			yield return GetError(json);
 			yield break;
 		}
 
@@ -221,12 +221,12 @@ partial class GoogleDrive
 
 		if (json == null)
 		{
-			yield return new Exception("InsertFolder response parsing failed.");
+			yield return new Exception(-1, "InsertFolder response parsing failed.");
 			yield break;
 		}
 		else if (json.ContainsKey("error"))
 		{
-			yield return new Exception(GetErrorString(json));
+			yield return GetError(json);
 			yield break;
 		}
 
@@ -254,7 +254,7 @@ partial class GoogleDrive
 		
 		if (json != null && json.ContainsKey("error"))
 		{
-			yield return new Exception(GetErrorString(json));
+			yield return GetError(json);
 			yield break;
 		}
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class DriveTest3 : MonoBehaviour
@@ -68,35 +69,87 @@ public class DriveTest3 : MonoBehaviour
 		//    Debug.Log("" + GoogleDrive.GetResult<GoogleDrive.File>(i));
 		//}
 
-		var listFiles = drive.ListFiles(drive.AppData.ID);
-		yield return StartCoroutine(listFiles);
-		var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
-
-		if (files != null)
+#if true
 		{
-			bool first = false;
+			var listFiles = drive.ListFiles(drive.AppData.ID);
+			yield return StartCoroutine(listFiles);
+			var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 
-			foreach (var file in files)
+			if (files != null)
+			{
+				bool first = false;
+
+				foreach (var file in files)
+				{
+					Debug.Log(file);
+
+					if (!first)
+					{
+						first = true;
+						//yield return StartCoroutine(drive.DeleteFile(file.ID));
+
+						//file.Title = "world";
+						//file.Description = null;
+						//yield return StartCoroutine(drive.UpdateFile(file));
+
+						//yield return StartCoroutine(drive.TouchFile(file.ID));
+					}
+
+					if (file.Title.EndsWith(".txt"))
+					{
+						//yield return StartCoroutine(drive.DuplicateFile(file, file.Title + " (2)"));
+					}
+				}
+			}
+			else
+			{
+				Debug.LogError(listFiles.Current);
+			}
+		}
+#endif
+
+#if false
+		{
+			var data = Encoding.UTF8.GetBytes("now is " + DateTime.Now);
+
+			var upload = drive.UploadFile(new GoogleDrive.File(
+				new Dictionary<string, object>
+			    {
+			        { "title", "my text file.txt" },
+			        { "mimeType", "text/plain" },
+			        { "description", "hihihi" }
+			    }),
+				data);
+
+			yield return StartCoroutine(upload);
+
+			var file = GoogleDrive.GetResult<GoogleDrive.File>(upload);
+
+			if (file != null)
 			{
 				Debug.Log(file);
 
-				if (!first)
+				var duplicate = drive.DuplicateFile(file, "my test file dup.txt");
+
+				yield return StartCoroutine(duplicate);
+
+				var dupFile = GoogleDrive.GetResult<GoogleDrive.File>(duplicate);
+
+				if (dupFile != null)
 				{
-					first = true;
-					//yield return StartCoroutine(drive.DeleteFile(file.ID));
-
-					//file.Title = "world";
-					//file.Description = null;
-					//yield return StartCoroutine(drive.UpdateFile(file));
-
-					//yield return StartCoroutine(drive.TouchFile(file.ID));
+					Debug.Log(dupFile);
+				}
+				else
+				{
+					Debug.LogError(duplicate.Current as Exception);
 				}
 			}
+			else
+			{
+				Debug.LogError(upload.Current as Exception);
+			}
 		}
-		else
-		{
-			Debug.LogError(listFiles.Current);
-		}
+#endif
 
 		initInProgress = false;
 	}

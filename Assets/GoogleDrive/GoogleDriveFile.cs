@@ -54,7 +54,10 @@ partial class GoogleDrive
 			DownloadUrl = TryGet<string>(metadata, "downloadUrl");
 
 			MD5Checksum = TryGet<string>(metadata, "md5Checksum");
-			FileSize = TryGet<long>(metadata, "fileSize");
+
+			string fileSize = TryGet<string>(metadata, "fileSize");
+			if (fileSize != null)
+				FileSize = long.Parse(fileSize);
 
 			// Get parent folders.
 			Parents = new List<string>();
@@ -85,7 +88,7 @@ partial class GoogleDrive
 				parents[i] = new Dictionary<string, object>();
 				parents[i]["id"] = Parents[i];
 			}
-			json["parent"] = parents;
+			json["parents"] = parents;
 
 			return json;
 		}
@@ -289,7 +292,7 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
-	/// Delete a file(folder) with ID.
+	/// Delete a file(or folder) with ID.
 	/// </summary>
 	/// <param name="id">File's ID.</param>
 	/// <returns>AsyncSuccess or Exception for error.</returns>
@@ -377,6 +380,11 @@ partial class GoogleDrive
 		yield return new AsyncSuccess(new File(json));
 	}
 
+	/// <summary>
+	/// Touch a file(or folder).
+	/// </summary>
+	/// <param name="fileId">File id to touch.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
 	public IEnumerator TouchFile(string fileId)
 	{
 		#region Check the access token is expired
@@ -416,5 +424,224 @@ partial class GoogleDrive
 		}
 
 		yield return new AsyncSuccess(new File(json));
+	}
+
+	/// <summary>
+	/// Duplicate a file in the same folder.
+	/// </summary>
+	/// <param name="file">File to duplicate.</param>
+	/// <param name="newTitle">New filename.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator DuplicateFile(File file, string newTitle)
+	{
+		File newFile = new File(file.ToJSON());
+		newFile.Title = newTitle;
+
+		var duplicate = DuplicateFile(file, newFile);
+		while (duplicate.MoveNext())
+			yield return duplicate.Current;
+	}
+
+	/// <summary>
+	/// Duplicate a file in a specified folder.
+	/// </summary>
+	/// <param name="file">File to duplicate.</param>
+	/// <param name="newTitle">New filename.</param>
+	/// <param name="newParentId">
+	///	New parent ID. If it is null then the new file will place in root folder.
+	/// </param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator DuplicateFile(File file, string newTitle, string newParentId)
+	{
+		File newFile = new File(file.ToJSON());
+		newFile.Title = newTitle;
+
+		// Set the new parent id.
+		if (newParentId != null)
+			newFile.Parents = new List<string> { newParentId };
+		else
+			newFile.Parents = new List<string> { };
+
+		var duplicate = DuplicateFile(file, newFile);
+		while (duplicate.MoveNext())
+			yield return duplicate.Current;
+	}
+	
+	/// <summary>
+	/// Duplicate a file.
+	/// </summary>
+	/// <param name="file">File to duplicate.</param>
+	/// <param name="newFile">New file data.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	IEnumerator DuplicateFile(File file, File newFile)
+	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
+		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + 
+			file.ID + "/copy");
+		request.method = "POST";
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+		request.headers["Content-Type"] = "application/json";
+
+		string metadata = JsonWriter.Serialize(newFile.ToJSON());
+		request.body = Encoding.UTF8.GetBytes(metadata);
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception(-1, "DuplicateFile response parsing failed.");
+			yield break;
+		}
+		else if (json.ContainsKey("error"))
+		{
+			yield return GetError(json);
+			yield break;
+		}
+
+		yield return new AsyncSuccess(new File(json));
+	}
+
+	/// <summary>
+	/// Upload a file to the root folder.
+	/// </summary>
+	/// <param name="title">Filename.</param>
+	/// <param name="mimeType">Content type.</param>
+	/// <param name="data">Data.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator UploadFile(string title, string mimeType, byte[] data)
+	{
+		var upload = UploadFile(title, mimeType, null, data);
+		while (upload.MoveNext())
+			yield return upload.Current;
+	}
+
+	/// <summary>
+	/// Upload a file.
+	/// </summary>
+	/// <param name="title">Filename.</param>
+	/// <param name="mimeType">Content type.</param>
+	/// <param name="parentId">Parent ID. null is the root folder.</param>
+	/// <param name="data">Data.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator UploadFile(string title, string mimeType, string parentId, byte[] data)
+	{
+		File file = new File(new Dictionary<string, object>
+		{
+			{ "title", title },
+			{ "mimeType", mimeType },
+		});
+
+		if (parentId != null)
+			file.Parents = new List<string> { parentId };
+
+		var upload = UploadFile(file, data);
+		while (upload.MoveNext())
+			yield return upload.Current;
+	}
+
+	/// <summary>
+	/// Upload a file.
+	/// </summary>
+	/// <param name="file">File metadata.</param>
+	/// <param name="data">Data.</param>
+	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	public IEnumerator UploadFile(File file, byte[] data)
+	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
+		string uploadUrl = null;
+
+		// Start a resumable session.
+		{
+			var request = new UnityWebRequest(
+				"https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable");
+			request.method = "POST";
+			request.headers["Authorization"] = "Bearer " + AccessToken;
+			request.headers["Content-Type"] = "application/json";
+			request.headers["X-Upload-Content-Type"] = file.MimeType;
+			request.headers["X-Upload-Content-Length"] = data.Length;
+
+			string metadata = JsonWriter.Serialize(file.ToJSON());
+			request.body = Encoding.UTF8.GetBytes(metadata);
+
+			var response = new UnityWebResponse(request);
+			while (!response.isDone)
+				yield return null;
+
+			if (response.statusCode != 200)
+			{
+				JsonReader reader = new JsonReader(response.text);
+				var json = reader.Deserialize<Dictionary<string, object>>();
+
+				if (json == null)
+				{
+					yield return new Exception(-1, "UploadFile response parsing failed.");
+					yield break;
+				}
+				else if (json.ContainsKey("error"))
+				{
+					yield return GetError(json);
+					yield break;
+				}
+			}
+
+			// Save the resumable session URI.
+			uploadUrl = response.headers["Location"] as string;
+		}
+
+		// Upload the file.
+		{
+			var request = new UnityWebRequest(uploadUrl);
+			request.method = "PUT";
+			request.headers["Authorization"] = "Bearer " + AccessToken;
+			request.headers["Content-Type"] = file.MimeType;
+			request.body = data;
+
+			var response = new UnityWebResponse(request);
+			while (!response.isDone)
+				yield return null;
+
+			JsonReader reader = new JsonReader(response.text);
+			var json = reader.Deserialize<Dictionary<string, object>>();
+
+			if (json == null)
+			{
+				yield return new Exception(-1, "UploadFile response parsing failed.");
+				yield break;
+			}
+			else if (json.ContainsKey("error"))
+			{
+				yield return GetError(json);
+				yield break;
+			}
+
+			yield return new AsyncSuccess(new File(json));
+		}
 	}
 }

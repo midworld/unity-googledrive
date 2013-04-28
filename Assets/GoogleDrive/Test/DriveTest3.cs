@@ -88,6 +88,8 @@ public class DriveTest3 : MonoBehaviour
 					//file.Title = "world";
 					//file.Description = null;
 					//yield return StartCoroutine(drive.UpdateFile(file));
+
+					//yield return StartCoroutine(drive.TouchFile(file.ID));
 				}
 			}
 		}

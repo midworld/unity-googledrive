@@ -376,4 +376,45 @@ partial class GoogleDrive
 
 		yield return new AsyncSuccess(new File(json));
 	}
+
+	public IEnumerator TouchFile(string fileId)
+	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
+		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + 
+			fileId + "/touch");
+		request.method = "POST";
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+		request.body = new byte[0]; // with no data
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		JsonReader reader = new JsonReader(response.text);
+		var json = reader.Deserialize<Dictionary<string, object>>();
+
+		if (json == null)
+		{
+			yield return new Exception(-1, "TouchFile response parsing failed.");
+			yield break;
+		}
+		else if (json.ContainsKey("error"))
+		{
+			yield return GetError(json);
+			yield break;
+		}
+
+		yield return new AsyncSuccess(new File(json));
+	}
 }

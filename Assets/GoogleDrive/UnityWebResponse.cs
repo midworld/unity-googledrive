@@ -168,9 +168,9 @@ namespace Midworld
 								}
 							}
 
-							UnityEngine.Debug.Log(DumpHeaders() +
-								"\r\n" +
-								"----");
+							//UnityEngine.Debug.Log(DumpHeaders() +
+							//    "\r\n" +
+							//    "----");
 
 							/* read body */
 							{

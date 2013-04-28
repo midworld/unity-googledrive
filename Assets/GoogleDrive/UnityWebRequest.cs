@@ -26,10 +26,11 @@ namespace Midworld
 			{
 				_body = value;
 
-				if (_body != null)
-					this.headers["Content-Length"] = value.Length.ToString();
-				else
-					this.headers.Remove("Content-Length");
+				// -> UnityWebResponse.cs
+				//if (_body != null)
+				//    this.headers["Content-Length"] = value.Length.ToString();
+				//else
+				//    this.headers.Remove("Content-Length");
 			}
 		}
 

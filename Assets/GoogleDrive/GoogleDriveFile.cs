@@ -578,6 +578,7 @@ partial class GoogleDrive
 		string uploadUrl = null;
 
 		// Start a resumable session.
+		if (file.ID == null || file.ID == string.Empty)
 		{
 			var request = new UnityWebRequest(
 				"https://www.googleapis.com/upload/drive/v2/files?uploadType=resumable");
@@ -613,6 +614,10 @@ partial class GoogleDrive
 
 			// Save the resumable session URI.
 			uploadUrl = response.headers["Location"] as string;
+		}
+		else
+		{
+			uploadUrl = "https://www.googleapis.com/upload/drive/v2/files/" + file.ID;
 		}
 
 		// Upload the file.

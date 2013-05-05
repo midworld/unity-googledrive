@@ -267,6 +267,7 @@ namespace Midworld
 							// test---
 #if UNITY_EDITOR
 							UnityEngine.Debug.LogWarning(request.DumpHeaders() +
+								(request.body == null ? "" : "Content-Length: " + request.body.Length + "\r\n") +
 								"\r\n" +
 								(request.body == null ? "" : Encoding.UTF8.GetString(request.body)));
 							UnityEngine.Debug.LogWarning(DumpHeaders() +

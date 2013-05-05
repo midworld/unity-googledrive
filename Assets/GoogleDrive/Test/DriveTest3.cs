@@ -6,6 +6,8 @@ using UnityEngine;
 
 public class DriveTest3 : MonoBehaviour
 {
+	public Transform cube = null;
+
 	GoogleDrive drive;
 
 	void Start()
@@ -39,6 +41,12 @@ public class DriveTest3 : MonoBehaviour
 		#endregion
 	}
 
+	void Update()
+	{
+		if (cube != null)
+			cube.RotateAround(Vector3.up, Time.deltaTime);
+	}
+
 	bool initInProgress = false;
 
 	IEnumerator InitGoogleDrive()
@@ -69,7 +77,7 @@ public class DriveTest3 : MonoBehaviour
 		//    Debug.Log("" + GoogleDrive.GetResult<GoogleDrive.File>(i));
 		//}
 
-#if true
+#if false
 		{
 			var listFiles = drive.ListFiles(drive.AppData.ID);
 			yield return StartCoroutine(listFiles);
@@ -188,5 +196,56 @@ public class DriveTest3 : MonoBehaviour
 		{
 			StartCoroutine(Revoke());
 		}
+
+		// ----
+		if (drive == null || uploadInProgress || !drive.IsAuthorized)
+		{
+			GUI.enabled = false;
+			GUI.Button(new Rect(220, 110, 200, 90), "Upload Screenshot");
+			GUI.enabled = true;
+		}
+		else if (GUI.Button(new Rect(220, 110, 200, 90), "Upload Screenshot"))
+		{
+			StartCoroutine(Upload());
+		}
+
+		GUI.Label(new Rect(10, 210, 200, 30), DateTime.Now.ToString());
+	}
+
+	GoogleDrive.File file = null;
+	bool uploadInProgress = false;
+
+	IEnumerator Upload()
+	{
+		if (drive == null || !drive.IsAuthorized || uploadInProgress)
+			yield break;
+
+		uploadInProgress = true;
+
+		yield return new WaitForEndOfFrame();
+
+		var tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+		tex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+		tex.Apply();
+
+		var png = tex.EncodeToPNG();
+		
+		GameObject.Destroy(tex);
+		tex = null;
+
+		if (file == null)
+		{
+			var upload = drive.UploadFile("my_screen.png", "image/png", png);
+			yield return StartCoroutine(upload);
+			file = GoogleDrive.GetResult<GoogleDrive.File>(upload);
+		}
+		else
+		{
+			var upload = drive.UploadFile(file, png);
+			yield return StartCoroutine(upload);
+			file = GoogleDrive.GetResult<GoogleDrive.File>(upload);
+		}
+
+		uploadInProgress = false;
 	}
 }

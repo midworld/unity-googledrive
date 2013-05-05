@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-public class DriveTest3 : MonoBehaviour
+public class DriveTest : MonoBehaviour
 {
 	public Transform cube = null;
 

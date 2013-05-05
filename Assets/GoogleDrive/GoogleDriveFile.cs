@@ -151,13 +151,24 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
-	/// Get files in a folder with ID.
+	/// Get all files.
 	/// </summary>
-	/// <param name="parentId">Folder ID.</param>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
-	public IEnumerator ListFiles(string parentId)
+	public IEnumerator ListAllFiles()
 	{
-		var listFiles = ListFilesByQueary(string.Format("'{0}' in parents", parentId));
+		var listFiles = ListFilesByQueary("");
+		while (listFiles.MoveNext())
+			yield return listFiles.Current;
+	}
+
+	/// <summary>
+	/// Get files in a folder with Folder File.
+	/// </summary>
+	/// <param name="parentFolder">Folder File.</param>
+	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
+	public IEnumerator ListFiles(File parentFolder)
+	{
+		var listFiles = ListFilesByQueary(string.Format("'{0}' in parents", parentFolder.ID));
 		while (listFiles.MoveNext())
 			yield return listFiles.Current;
 	}
@@ -232,11 +243,11 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
-	/// Insert a folder.
+	/// Insert a folder to otehr folder.
 	/// </summary>
-	/// <param name="parentId">Parent folder ID.</param>
+	/// <param name="parentFolder">Parent folder.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
-	public IEnumerator InsertFolder(string title, string parentId)
+	public IEnumerator InsertFolder(string title, File parentFolder)
 	{
 		#region Check the access token is expired
 		var check = CheckExpiration();
@@ -258,13 +269,13 @@ partial class GoogleDrive
 		Dictionary<string, object> data = new Dictionary<string, object>();
 		data["title"] = title;
 		data["mimeType"] = "application/vnd.google-apps.folder";
-		if (parentId != null)
+		if (parentFolder != null)
 		{
 			data["parents"] = new List<Dictionary<string, string>>
 			{
 				new Dictionary<string, string> 
 				{
-					{ "id", parentId }
+					{ "id", parentFolder.ID }
 				},
 			};
 		}
@@ -292,11 +303,11 @@ partial class GoogleDrive
 	}
 
 	/// <summary>
-	/// Delete a file(or folder) with ID.
+	/// Delete a file(or folder).
 	/// </summary>
-	/// <param name="id">File's ID.</param>
+	/// <param name="file">File.</param>
 	/// <returns>AsyncSuccess or Exception for error.</returns>
-	public IEnumerator DeleteFile(string id)
+	public IEnumerator DeleteFile(File file)
 	{
 		#region Check the access token is expired
 		var check = CheckExpiration();
@@ -310,7 +321,7 @@ partial class GoogleDrive
 		}
 		#endregion
 
-		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + id);
+		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + file.ID);
 		request.method = "DELETE";
 		request.headers["Authorization"] = "Bearer " + AccessToken;
 
@@ -383,9 +394,9 @@ partial class GoogleDrive
 	/// <summary>
 	/// Touch a file(or folder).
 	/// </summary>
-	/// <param name="fileId">File id to touch.</param>
+	/// <param name="file">File to touch.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
-	public IEnumerator TouchFile(string fileId)
+	public IEnumerator TouchFile(File file)
 	{
 		#region Check the access token is expired
 		var check = CheckExpiration();
@@ -400,7 +411,7 @@ partial class GoogleDrive
 		#endregion
 
 		var request = new UnityWebRequest("https://www.googleapis.com/drive/v2/files/" + 
-			fileId + "/touch");
+			file.ID + "/touch");
 		request.method = "POST";
 		request.headers["Authorization"] = "Bearer " + AccessToken;
 		request.body = new byte[0]; // with no data
@@ -447,18 +458,18 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">File to duplicate.</param>
 	/// <param name="newTitle">New filename.</param>
-	/// <param name="newParentId">
-	///	New parent ID. If it is null then the new file will place in root folder.
+	/// <param name="newParentFolder">
+	///	New parent folder. If it is null then the new file will place in root folder.
 	/// </param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
-	public IEnumerator DuplicateFile(File file, string newTitle, string newParentId)
+	public IEnumerator DuplicateFile(File file, string newTitle, File newParentFolder)
 	{
 		File newFile = new File(file.ToJSON());
 		newFile.Title = newTitle;
 
 		// Set the new parent id.
-		if (newParentId != null)
-			newFile.Parents = new List<string> { newParentId };
+		if (newParentFolder != null)
+			newFile.Parents = new List<string> { newParentFolder.ID };
 		else
 			newFile.Parents = new List<string> { };
 
@@ -536,10 +547,10 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="title">Filename.</param>
 	/// <param name="mimeType">Content type.</param>
-	/// <param name="parentId">Parent ID. null is the root folder.</param>
+	/// <param name="parentFolder">Parent folder. null is the root folder.</param>
 	/// <param name="data">Data.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
-	public IEnumerator UploadFile(string title, string mimeType, string parentId, byte[] data)
+	public IEnumerator UploadFile(string title, string mimeType, File parentFolder, byte[] data)
 	{
 		File file = new File(new Dictionary<string, object>
 		{
@@ -547,8 +558,8 @@ partial class GoogleDrive
 			{ "mimeType", mimeType },
 		});
 
-		if (parentId != null)
-			file.Parents = new List<string> { parentId };
+		if (parentFolder != null)
+			file.Parents = new List<string> { parentFolder.ID };
 
 		var upload = UploadFile(file, data);
 		while (upload.MoveNext())
@@ -648,5 +659,52 @@ partial class GoogleDrive
 
 			yield return new AsyncSuccess(new File(json));
 		}
+	}
+
+	/// <summary>
+	/// Download a file content.
+	/// </summary>
+	/// <param name="file">File.</param>
+	/// <returns>AsyncSuccess with byte[] or Exception for error.</returns>
+	public IEnumerator DownloadFile(File file)
+	{
+		if (file.DownloadUrl == null || file.DownloadUrl == string.Empty)
+		{
+			yield return new Exception(-1, "No download URL.");
+			yield break;
+		}
+
+		var download = DownloadFile(file.DownloadUrl);
+		while (download.MoveNext())
+			yield return download.Current;
+	}
+
+	/// <summary>
+	/// Download a file content.
+	/// </summary>
+	/// <param name="file">Download URL.</param>
+	/// <returns>AsyncSuccess with byte[] or Exception for error.</returns>
+	public IEnumerator DownloadFile(string url)
+	{
+		#region Check the access token is expired
+		var check = CheckExpiration();
+		while (check.MoveNext())
+			yield return null;
+
+		if (check.Current is Exception)
+		{
+			yield return check.Current;
+			yield break;
+		}
+		#endregion
+
+		var request = new UnityWebRequest(url);
+		request.headers["Authorization"] = "Bearer " + AccessToken;
+
+		var response = new UnityWebResponse(request);
+		while (!response.isDone)
+			yield return null;
+
+		yield return new AsyncSuccess(response.bytes);
 	}
 }

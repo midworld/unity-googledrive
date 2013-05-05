@@ -7,7 +7,7 @@ namespace GoogleDriveOld
 {
 	namespace Files
 	{
-		class List : Ticket
+		class List : Midworld.UnityCoroutine
 		{
 			int id = -1;
 

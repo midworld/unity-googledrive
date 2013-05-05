@@ -56,7 +56,6 @@ public class DriveTest3 : MonoBehaviour
 		drive = new GoogleDrive();
 		drive.ClientID = "897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
 		drive.ClientSecret = "tGNLbYnrdRO2hdFmwJAo5Fbt";
-		drive.RootDirectoryName = "UnityGoogleDriveTest";
 
 		var authorization = drive.Authorize();
 		yield return StartCoroutine(authorization);
@@ -77,9 +76,9 @@ public class DriveTest3 : MonoBehaviour
 		//    Debug.Log("" + GoogleDrive.GetResult<GoogleDrive.File>(i));
 		//}
 
-#if false
+#if true
 		{
-			var listFiles = drive.ListFiles(drive.AppData.ID);
+			var listFiles = drive.ListFiles(drive.AppData);
 			yield return StartCoroutine(listFiles);
 			var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 
@@ -106,6 +105,11 @@ public class DriveTest3 : MonoBehaviour
 					if (file.Title.EndsWith(".txt"))
 					{
 						//yield return StartCoroutine(drive.DuplicateFile(file, file.Title + " (2)"));
+
+						//var download = drive.DownloadFile(file);
+						//yield return StartCoroutine(download);
+						//var data = GoogleDrive.GetResult<byte[]>(download);
+						//Debug.Log(System.Text.Encoding.UTF8.GetString(data));
 					}
 				}
 			}

@@ -180,8 +180,7 @@ partial class GoogleDrive
 			while (validate.MoveNext())
 				yield return null;
 
-			if (!(validate.Current is Exception))
-				IsAuthorized = true;
+			IsAuthorized = true;
 		}
 		else
 		{
@@ -373,110 +372,101 @@ partial class GoogleDrive
 			"&redirect_uri=" + RedirectURI +
 			"&client_id=" + ClientID);
 
-		if (Application.platform == RuntimePlatform.WindowsWebPlayer ||
-			Application.platform == RuntimePlatform.OSXWebPlayer ||
-			Application.platform == RuntimePlatform.FlashPlayer)
+		#region OPEN BROWSER FOR AUTHORIZATION
+		System.Diagnostics.Process browser;
+		bool windows = false;
+
+		// Open the browser.
+		if (Application.platform == RuntimePlatform.WindowsPlayer ||
+			Application.platform == RuntimePlatform.WindowsEditor)
 		{
-			// TODO: javascript authorization
+			windows = true;
+
+			System.Diagnostics.ProcessStartInfo startInfo =
+				new System.Diagnostics.ProcessStartInfo("IExplore.exe");
+			startInfo.Arguments = uri.ToString();
+
+			browser = new System.Diagnostics.Process();
+			browser.StartInfo = startInfo;
+			browser.Start();
 		}
 		else
 		{
-			#region OPEN BROWSER FOR AUTHORIZATION
-			System.Diagnostics.Process browser;
-			bool windows = false;
+			browser = System.Diagnostics.Process.Start(uri.ToString());
+		}
 
-			// Open the browser.
-			if (Application.platform == RuntimePlatform.WindowsPlayer ||
-				Application.platform == RuntimePlatform.WindowsEditor)
+		// Authorization code will redirect to this server.
+		AuthRedirectionServer server = new AuthRedirectionServer();
+		server.StartServer(SERVER_PORT);
+
+		// Wait for authorization code.
+		while (!windows || !browser.HasExited)
+		{
+			if (server.AuthorizationCode != null)
 			{
-				windows = true;
-
-				System.Diagnostics.ProcessStartInfo startInfo =
-					new System.Diagnostics.ProcessStartInfo("IExplore.exe");
-				startInfo.Arguments = uri.ToString();
-
-				browser = new System.Diagnostics.Process();
-				browser.StartInfo = startInfo;
-				browser.Start();
+				browser.CloseMainWindow();
+				browser.Close();
+				break;
 			}
 			else
+				yield return null;
+		}
+
+		server.StopServer();
+
+		// Authorization rejected.
+		if (server.AuthorizationCode == null)
+		{
+			yield return new Exception(-1, "Authorization rejected.");
+			yield break;
+		}
+
+		// Get the access token by the authroization code.
+		var getAccessToken = GetAccessTokenByAuthorizationCode(server.AuthorizationCode);
+		{
+			while (getAccessToken.MoveNext())
+				yield return null;
+
+			if (getAccessToken.Current is Exception)
 			{
-				browser = System.Diagnostics.Process.Start(uri.ToString());
-			}
-
-			// Authorization code will redirect to this server.
-			AuthRedirectionServer server = new AuthRedirectionServer();
-			server.StartServer(SERVER_PORT);
-
-			// Wait for authorization code.
-			while (!windows || !browser.HasExited)
-			{
-				if (server.AuthorizationCode != null)
-				{
-					browser.CloseMainWindow();
-					browser.Close();
-					break;
-				}
-				else
-					yield return null;
-			}
-
-			server.StopServer();
-
-			// Authorization rejected.
-			if (server.AuthorizationCode == null)
-			{
-				yield return new Exception(-1, "Authorization rejected.");
+				yield return getAccessToken.Current;
 				yield break;
 			}
 
-			// Get the access token by the authroization code.
-			var getAccessToken = GetAccessTokenByAuthorizationCode(server.AuthorizationCode);
+			var res = (TokenResponse)getAccessToken.Current;
+			if (res.error != null)
 			{
-				while (getAccessToken.MoveNext())
-					yield return null;
-
-				if (getAccessToken.Current is Exception)
-				{
-					yield return getAccessToken.Current;
-					yield break;
-				}
-
-				var res = (TokenResponse)getAccessToken.Current;
-				if (res.error != null)
-				{
-					yield return res.error;
-					yield break;
-				}
-
-				AccessToken = res.accessToken;
-				RefreshToken = res.refreshToken;
+				yield return res.error;
+				yield break;
 			}
 
-			// And validate for email address.
-			var validate = ValidateToken(accessToken);
-			{
-				while (validate.MoveNext())
-					yield return null;
-
-				if (validate.Current is Exception)
-				{
-					yield return validate.Current;
-					yield break;
-				}
-
-				var res = (TokenInfoResponse)validate.Current;
-				if (res.error != null)
-				{
-					yield return res.error;
-					yield break;
-				}
-
-				if (res.email != null)
-					UserAccount = res.email;
-			}
-			#endregion
+			AccessToken = res.accessToken;
+			RefreshToken = res.refreshToken;
 		}
+
+		// And validate for email address.
+		var validate = ValidateToken(accessToken);
+		{
+			while (validate.MoveNext())
+				yield return null;
+
+			if (validate.Current is Exception)
+			{
+				yield return validate.Current;
+				yield break;
+			}
+
+			var res = (TokenInfoResponse)validate.Current;
+			if (res.error != null)
+			{
+				yield return res.error;
+				yield break;
+			}
+
+			if (res.email != null)
+				UserAccount = res.email;
+		}
+		#endregion
 	}
 
 	/// <summary>

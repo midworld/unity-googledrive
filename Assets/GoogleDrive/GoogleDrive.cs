@@ -56,4 +56,27 @@ partial class GoogleDrive
 	{
 		return (async.Current is AsyncSuccess || async.Current is Exception);
 	}
+
+#if !UNITY_EDITOR && UNITY_ANDROID
+	AndroidJavaClass pluginClass;
+#endif
+
+	public GoogleDrive()
+	{
+#if !UNITY_EDITOR && UNITY_ANDROID
+		pluginClass = new AndroidJavaClass("com.studio272.googledriveplugin.GoogleDrivePlugin");
+
+		// Set Unity activity.
+		{
+			AndroidJavaClass unityPlayerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+			AndroidJavaObject unityActivity = unityPlayerClass.GetStatic<AndroidJavaObject>("currentActivity");
+
+			pluginClass.CallStatic("setUnityActivity", new object[] { unityActivity });
+
+			unityActivity.Dispose();
+			unityPlayerClass.Dispose();
+		}
+#elif !UNITY_EDITOR && UNITY_IPHONE
+#endif
+	}
 }

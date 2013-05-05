@@ -135,11 +135,11 @@ class DriveTest2 : MonoBehaviour
 			//"urn:ietf:wg:oauth:2.0:oob";
 			"http://localhost:9270";
 #elif UNITY_ANDROID
-		GoogleDrive.Auth.clientID =
-			"897584417662-hs5soq7srr706129i8t8qq7b8cc7cgha.apps.googleusercontent.com";
-		// Android doesn't need the client secret.
-		GoogleDrive.Auth.redirectURI =
-			"urn:ietf:wg:oauth:2.0:oob";
+		//GoogleDrive.Auth.clientID =
+		//    "897584417662-hs5soq7srr706129i8t8qq7b8cc7cgha.apps.googleusercontent.com";
+		//// Android doesn't need the client secret.
+		//GoogleDrive.Auth.redirectURI =
+		//    "urn:ietf:wg:oauth:2.0:oob";
 #endif
 
 #if UNITY_EDITOR
@@ -263,9 +263,9 @@ class DriveTest2 : MonoBehaviour
 			yield return StartCoroutine(GoogleDriveOld.Auth.ValidateToken()); // get the email address
 		}
 #elif UNITY_ANDROID
-		GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
+		//GoogleDrive.Auth.apiKey = "AIzaSyAcvilb4ZVQjyhP-1_wJ52hJORjiKHsV9o";
 
-		yield return StartCoroutine(GoogleDrive.Auth.Authorize());
+		//yield return StartCoroutine(GoogleDrive.Auth.Authorize());
 #endif
 
 		if (GoogleDriveOld.Auth.isAuthorized)

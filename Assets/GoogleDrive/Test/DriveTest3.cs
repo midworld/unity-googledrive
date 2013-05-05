@@ -45,6 +45,9 @@ public class DriveTest3 : MonoBehaviour
 	{
 		if (cube != null)
 			cube.RotateAround(Vector3.up, Time.deltaTime);
+
+		if (Input.GetKey(KeyCode.Escape))
+			Application.Quit();
 	}
 
 	bool initInProgress = false;
@@ -106,10 +109,10 @@ public class DriveTest3 : MonoBehaviour
 					{
 						//yield return StartCoroutine(drive.DuplicateFile(file, file.Title + " (2)"));
 
-						//var download = drive.DownloadFile(file);
-						//yield return StartCoroutine(download);
-						//var data = GoogleDrive.GetResult<byte[]>(download);
-						//Debug.Log(System.Text.Encoding.UTF8.GetString(data));
+						var download = drive.DownloadFile(file);
+						yield return StartCoroutine(download);
+						var data = GoogleDrive.GetResult<byte[]>(download);
+						Debug.Log(System.Text.Encoding.UTF8.GetString(data));
 					}
 				}
 			}

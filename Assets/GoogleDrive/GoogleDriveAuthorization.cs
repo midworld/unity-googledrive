@@ -163,7 +163,35 @@ partial class GoogleDrive
 		#endregion
 
 #if !UNITY_EDITOR && UNITY_ANDROID
-		// TODO: Android authorization
+		pluginClass.CallStatic("auth", new object[] { 
+			(AndroidJavaRunnable)AuthSuccess, (AndroidJavaRunnable)AuthFailure });
+
+		while (!success && !failure)
+			yield return null;
+
+		if (success)
+		{
+			success = false;
+
+			AccessToken = pluginClass.CallStatic<string>("getAuthToken");
+			UserAccount = pluginClass.CallStatic<string>("getSelectedAccountName");
+
+			var validate = ValidateToken(AccessToken);
+			while (validate.MoveNext())
+				yield return null;
+
+			if (!(validate.Current is Exception))
+				IsAuthorized = true;
+		}
+		else
+		{
+			failure = false;
+
+			IsAuthorized = false;
+
+			yield return new Exception(-1, "Authorization failed.");
+			yield break;
+		}
 #elif !UNITY_EDITOR && UNITY_IPHONE
 		// TODO: iOS authorization
 #else
@@ -272,6 +300,20 @@ partial class GoogleDrive
 		yield return new AsyncSuccess();
 	}
 
+#if !UNITY_EDITOR && UNITY_ANDROID
+	bool success = false, failure = false;
+
+	void AuthSuccess()
+	{
+		success = true;
+	}
+
+	void AuthFailure()
+	{
+		failure = true;
+	}
+#endif
+
 	/// <summary>
 	/// Unauthorize and remove the saved session.
 	/// </summary>
@@ -280,6 +322,14 @@ partial class GoogleDrive
 	{
 		IsAuthorized = false;
 
+#if !UNITY_EDITOR && UNITY_ANDROID
+		pluginClass.CallStatic("clearSelectedAccountName");
+		
+		AccessToken = null;
+
+		yield return new AsyncSuccess();
+#elif !UNITY_EDITOR && UNITY_IPHONE
+#else
 		var revoke = RevokeToken(AccessToken);
 		while (revoke.MoveNext())
 			yield return null;
@@ -304,6 +354,7 @@ partial class GoogleDrive
 		}
 
 		yield return new AsyncSuccess();
+#endif
 	}
 
 	/// <summary>
@@ -421,7 +472,8 @@ partial class GoogleDrive
 					yield break;
 				}
 
-				UserAccount = res.email;
+				if (res.email != null)
+					UserAccount = res.email;
 			}
 			#endregion
 		}
@@ -473,7 +525,8 @@ partial class GoogleDrive
 				yield break;
 			}
 
-			UserAccount = res.email;
+			if (res.email != null)
+				UserAccount = res.email;
 		}
 	}
 
@@ -485,11 +538,38 @@ partial class GoogleDrive
 	{
 		if (DateTime.Now >= expiresIn)
 		{
+#if !UNITY_EDITOR && UNITY_ANDROID
+			pluginClass.CallStatic("auth", new object[] { 
+				(AndroidJavaRunnable)AuthSuccess, (AndroidJavaRunnable)AuthFailure });
+
+			while (!success && !failure)
+				yield return null;
+
+			if (success)
+			{
+				success = false;
+
+				AccessToken = pluginClass.CallStatic<string>("getAuthToken");
+
+				var validate = ValidateToken(AccessToken);
+				while (validate.MoveNext())
+					yield return validate.Current;
+			}
+			else
+			{
+				failure = false;
+
+				yield return new Exception(-1, "Authorization failed.");
+				yield break;
+			}
+#elif !UNITY_EDITOR && UNITY_IPHONE
+#else
 			var refresh = RefreshAccessToken();
 			while (refresh.MoveNext())
 				yield return null;
 
 			yield return refresh.Current;
+#endif
 		}
 	}
 

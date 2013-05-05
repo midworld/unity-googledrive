@@ -636,7 +636,7 @@ partial class GoogleDrive
 			var request = new UnityWebRequest(uploadUrl);
 			request.method = "PUT";
 			request.headers["Authorization"] = "Bearer " + AccessToken;
-			request.headers["Content-Type"] = file.MimeType;
+			request.headers["Content-Type"] = "application/octet-stream"; // file.MimeType;
 			request.body = data;
 
 			var response = new UnityWebResponse(request);

@@ -249,7 +249,7 @@ public class DriveTest : MonoBehaviour
 			file = new GoogleDrive.File(new Dictionary<string, object>
 			{
 				{ "title", "my_text.txt" },
-				{ "mimeType", "application/octet-stream" }, // "text/plain" occurs "Parse Error (400)" sometime.
+				{ "mimeType", "text/plain" },
 				{ "description", "test" }
 			});
 			data = new Dictionary<string, object>();

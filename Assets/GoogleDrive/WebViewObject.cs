@@ -3,12 +3,25 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
+/// <summary>
+/// Unity3D - iOS WebView Object.
+/// </summary>
 public class WebViewObject : MonoBehaviour
 {
+#if !UNITY_EDITOR && UNITY_IPHONE
+	/// <summary>
+	/// URL to open.
+	/// </summary>
 	public Uri url = new Uri("about:blank");
 
+	/// <summary>
+	/// Authorization code.
+	/// </summary>
 	public string token = null;
 
+	/// <summary>
+	/// WebView closed by user touch.
+	/// </summary>
 	public bool cancelled = false;
 
 	IntPtr webView;
@@ -29,6 +42,9 @@ public class WebViewObject : MonoBehaviour
 		StartCoroutine(CheckTitle());
 	}
 
+	/// <summary>
+	/// Authorization result will be shown in title.
+	/// </summary>
 	IEnumerator CheckTitle()
 	{
 		while (opened) 
@@ -93,4 +109,5 @@ public class WebViewObject : MonoBehaviour
 
 	[DllImport ("__Internal")]
 	static extern void _WebViewPlugin_EvaluateJS(IntPtr instance, string url);
+#endif
 }

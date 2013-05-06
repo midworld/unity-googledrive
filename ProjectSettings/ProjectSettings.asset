@@ -115,7 +115,7 @@ PlayerSettings:
   wiiFloatingPointExceptions: 0
   wiiScreenCrashDumps: 1
   wiiMemoryLabelCount: 147
-  wiiMemorySetup: 5effbee7ffffff61f50100000000000000000000
+  wiiMemorySetup: 5effbee7ffffff75f70100000000000000000000
   XboxTitleId: 
   XboxImageXexPath: 
   XboxSpaPath: 
@@ -134,6 +134,7 @@ PlayerSettings:
   ps3BootCheckMaxSaveGameSizeKB: 128
   ps3TrophyCommSig: 
   ps3SaveGameSlots: 1
+  ps3EDATKeyFilePath: 
   ps3TrialMode: 0
   flashStrippingLevel: 2
   firstStreamedLevelWithResources: 0

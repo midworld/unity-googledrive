@@ -7,7 +7,7 @@ PlayerSettings:
   AndroidProfiler: 0
   defaultScreenOrientation: 0
   targetDevice: 2
-  targetPlatform: 1
+  targetPlatform: 2
   targetResolution: 0
   accelerometerFrequency: 60
   companyName: Studio272
@@ -66,14 +66,14 @@ PlayerSettings:
   AndroidPreferredInstallLocation: 1
   aotOptions: 
   apiCompatibilityLevel: 2
-  iPhoneStrippingLevel: 3
-  iPhoneScriptCallOptimization: 0
+  iPhoneStrippingLevel: 2
+  iPhoneScriptCallOptimization: 1
   ForceInternetPermission: 1
   ForceSDCardPermission: 0
   CreateWallpaper: 0
   StripUnusedMeshComponents: 0
   iPhoneSdkVersion: 988
-  iPhoneTargetOSVersion: 4
+  iPhoneTargetOSVersion: 7
   uIPrerenderedIcon: 0
   uIRequiresPersistentWiFi: 0
   uIStatusBarHidden: 1
@@ -97,7 +97,10 @@ PlayerSettings:
     m_Icons:
     - m_Icon: {fileID: 0}
       m_Size: 128
-  m_BuildTargetBatching: []
+  m_BuildTargetBatching:
+  - m_BuildTarget: iPhone
+    m_StaticBatching: 1
+    m_DynamicBatching: 1
   webPlayerTemplate: APPLICATION:Default
   m_TemplateCustomTags: {}
   wiiRegion: 1
@@ -112,7 +115,7 @@ PlayerSettings:
   wiiFloatingPointExceptions: 0
   wiiScreenCrashDumps: 1
   wiiMemoryLabelCount: 147
-  wiiMemorySetup: 5effbee7ffffff75f70100000000000000000000
+  wiiMemorySetup: 5effbee7ffffff61f50100000000000000000000
   XboxTitleId: 
   XboxImageXexPath: 
   XboxSpaPath: 
@@ -131,7 +134,6 @@ PlayerSettings:
   ps3BootCheckMaxSaveGameSizeKB: 128
   ps3TrophyCommSig: 
   ps3SaveGameSlots: 1
-  ps3EDATKeyFilePath: 
   ps3TrialMode: 0
   flashStrippingLevel: 2
   firstStreamedLevelWithResources: 0

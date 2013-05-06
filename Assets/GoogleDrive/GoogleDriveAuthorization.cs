@@ -16,10 +16,28 @@ partial class GoogleDrive
 	/// <summary>
 	/// Redirection URI.
 	/// </summary>
-	/// <remarks>Only for PC.</remarks>
 	public string RedirectURI
 	{
+#if !UNITY_EDITOR && UNITY_IPHONE
+		get { return "urn:ietf:wg:oauth:2.0:oob"; }
+#else
 		get { return "http://localhost:" + SERVER_PORT; }
+#endif
+	}
+
+	public Uri AuthorizationURL
+	{
+		get
+		{
+			return new Uri("https://accounts.google.com/o/oauth2/auth?" +
+				"scope=" +
+					"https://www.googleapis.com/auth/drive.file" +
+					" https://www.googleapis.com/auth/userinfo.email" +
+					" https://www.googleapis.com/auth/drive.appdata" +
+				"&response_type=code" +
+				"&redirect_uri=" + RedirectURI +
+				"&client_id=" + ClientID);
+		}
 	}
 
 	bool isAuthorized = false;
@@ -191,8 +209,6 @@ partial class GoogleDrive
 			yield return new Exception(-1, "Authorization failed.");
 			yield break;
 		}
-#elif !UNITY_EDITOR && UNITY_IPHONE
-		// TODO: iOS authorization
 #else
 		if (AccessToken == "")
 		{
@@ -327,7 +343,6 @@ partial class GoogleDrive
 		AccessToken = null;
 
 		yield return new AsyncSuccess();
-#elif !UNITY_EDITOR && UNITY_IPHONE
 #else
 		var revoke = RevokeToken(AccessToken);
 		while (revoke.MoveNext())
@@ -363,15 +378,34 @@ partial class GoogleDrive
 	IEnumerator GetAuthorizationCodeAndAccessToken()
 	{
 		// Google authorization URL
-		Uri uri = new Uri("https://accounts.google.com/o/oauth2/auth?" +
-			"scope=" +
-				"https://www.googleapis.com/auth/drive.file" +
-				" https://www.googleapis.com/auth/userinfo.email" +
-				" https://www.googleapis.com/auth/drive.appdata" +
-			"&response_type=code" +
-			"&redirect_uri=" + RedirectURI +
-			"&client_id=" + ClientID);
+		Uri uri = AuthorizationURL;
 
+		string authorizationCode = null;
+
+#if !UNITY_EDITOR && UNITY_IPHONE
+		#region OPEN WEBVIEW FOR AUTHORIZATION
+		var obj = new GameObject("WebViewObject");
+		var webView = obj.AddComponent<WebViewObject>();
+		webView.url = AuthorizationURL;
+
+		while (webView.token == null && !webView.cancelled)
+			yield return null;
+
+		if (webView.cancelled)
+		{
+			GameObject.Destroy(obj);
+
+			IsAuthorized = false;
+
+			yield return new Exception(-1, "Authorization failed.");
+			yield break;
+		}
+
+		authorizationCode = webView.token;
+
+		GameObject.Destroy(obj);
+		#endregion
+#else
 		#region OPEN BROWSER FOR AUTHORIZATION
 		System.Diagnostics.Process browser;
 		bool windows = false;
@@ -421,8 +455,12 @@ partial class GoogleDrive
 			yield break;
 		}
 
+		authorizationCode = server.AuthorizationCode;
+		#endregion
+#endif
+
 		// Get the access token by the authroization code.
-		var getAccessToken = GetAccessTokenByAuthorizationCode(server.AuthorizationCode);
+		var getAccessToken = GetAccessTokenByAuthorizationCode(authorizationCode);
 		{
 			while (getAccessToken.MoveNext())
 				yield return null;
@@ -466,7 +504,6 @@ partial class GoogleDrive
 			if (res.email != null)
 				UserAccount = res.email;
 		}
-		#endregion
 	}
 
 	/// <summary>
@@ -553,6 +590,9 @@ partial class GoogleDrive
 				yield break;
 			}
 #elif !UNITY_EDITOR && UNITY_IPHONE
+			// TODO: iOS
+
+			yield return null;
 #else
 			var refresh = RefreshAccessToken();
 			while (refresh.MoveNext())

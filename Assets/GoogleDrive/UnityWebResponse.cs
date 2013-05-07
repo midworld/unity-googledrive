@@ -58,7 +58,7 @@ namespace Midworld
 
 					do
 					{
-						/* get stream */
+						#region Get stream
 						if (newConnection)
 						{
 							client.SendTimeout = TIMEOUT;
@@ -73,8 +73,9 @@ namespace Midworld
 								(stream as SslStream).AuthenticateAsClient(uri.Host);
 							}
 						}
+						#endregion
 
-						/* request */
+						#region Request
 						{
 							BinaryWriter writer = new BinaryWriter(stream);
 							writer.Write(Encoding.UTF8.GetBytes(request.method + " " +
@@ -110,12 +111,13 @@ namespace Midworld
 								writer.Write(Encoding.UTF8.GetBytes("\r\n"));
 							}
 						}
+						#endregion
 
-						/* response */
+						#region Response
 						{
 							BufferedStream bufferedStream = new BufferedStream(stream);
 
-							/* read headers */
+							#region Read headers
 							{
 								List<string> lines = new List<string>();
 
@@ -167,12 +169,13 @@ namespace Midworld
 									}
 								}
 							}
+							#endregion
 
 							//UnityEngine.Debug.Log(DumpHeaders() +
 							//    "\r\n" +
 							//    "----");
 
-							/* read body */
+							#region Read body
 							{
 								int contentLength = -1;
 								if (this.headers.ContainsKey("Content-Length"))
@@ -232,9 +235,12 @@ namespace Midworld
 								{
 									this.bytes = new byte[0];
 								}
-							}
 
-							/* redirection */
+								cachedText = null;
+							}
+							#endregion
+
+							#region Redirection
 							if ((this.statusCode == 301 ||
 								this.statusCode == 302 ||
 								this.statusCode == 303 ||
@@ -263,9 +269,17 @@ namespace Midworld
 								redirection++;
 								continue;
 							}
+							#endregion
 
-							// test---
+							#region Decoding
+							if (this.headers.ContainsKey("Content-Encoding"))
+							{
+								bytes = Decompress((this.headers["Content-Encoding"] as string).ToLower(), bytes);
+							}
+							#endregion
+
 #if UNITY_EDITOR
+							// test---
 							UnityEngine.Debug.LogWarning(request.DumpHeaders() +
 								(request.body == null ? "" : "Content-Length: " + request.body.Length + "\r\n") +
 								"\r\n" +
@@ -275,16 +289,12 @@ namespace Midworld
 								this.text);
 #endif
 						}
+						#endregion
 
 						stream.Close();
 						client.Close();
 						break;
 					} while (redirection < MAX_REDIRECTION);
-
-					if (this.headers.ContainsKey("Content-Encoding"))
-					{
-						bytes = Decompress((this.headers["Content-Encoding"] as string).ToLower(), bytes);
-					}
 				}
 				catch (Exception e)
 				{

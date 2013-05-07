@@ -133,8 +133,14 @@ partial class GoogleDrive
 	 * \subsection step3 Step 3: Run the Sample Scene 'DriveTest'.
 	 * 
 	 * All done!
+	 *
+	 * \section demo Demo Download
 	 * 
-	 * \subsection sample Sample Code
+	 * - Windows Binary: <a href="./unitydrivetest_win.zip">unitydrivetest_win.zip</a>
+	 * 
+	 * - Android APK: <a href="./unitydrivetest.apk">unitydrivetest.apk</a>
+	 * 
+	 * \section sample Sample Code
 	 * 
 	 * \code
 	 * var drive = new GoogleDrive();

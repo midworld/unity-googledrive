@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-#if UNITY_EDITOR || UNITY_STANDALONE
+#if UNITY_EDITOR || !(UNITY_ANDROID || UNITY_IPHONE || UNITY_FLASH)
 /// <summary>
 /// Listen server for Google authorization result(Internal)
 /// </summary>

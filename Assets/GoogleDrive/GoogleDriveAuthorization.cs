@@ -16,16 +16,19 @@ partial class GoogleDrive
 	/// <summary>
 	/// Redirection URI.
 	/// </summary>
-	public string RedirectURI
+	string RedirectURI
 	{
+		get
+		{
 #if !UNITY_EDITOR && UNITY_IPHONE
-		get { return "urn:ietf:wg:oauth:2.0:oob"; }
+			return "urn:ietf:wg:oauth:2.0:oob";
 #else
-		get { return "http://localhost:" + SERVER_PORT; }
+			return "http://localhost:" + SERVER_PORT; 
 #endif
+		}
 	}
 
-	public Uri AuthorizationURL
+	Uri AuthorizationURL
 	{
 		get
 		{
@@ -159,6 +162,24 @@ partial class GoogleDrive
 	/// Start authorization.
 	/// </summary>
 	/// <returns>AsyncSuccess or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// var drive = new GoogleDrive();
+	/// drive.ClientID = "YOUR CLIENT ID"; // unnecessary to Android
+	/// drive.ClientSecret = "YOUR CLIENT SECRET"; // unnecessary to Android
+	/// 
+	/// var authorization = drive.Authorize();
+	///	yield return StartCoroutine(authorization);
+	///
+	///	if (authorization.Current is Exception)
+	///	{
+	///		Debug.LogError(authorization.Current as Exception);
+	///		return;
+	///	}
+	///	
+	/// do something;
+	/// </code>
+	/// </example>
 	public IEnumerator Authorize()
 	{
 		#region CHECK CLIENT ID AND SECRET
@@ -333,6 +354,11 @@ partial class GoogleDrive
 	/// Unauthorize and remove the saved session.
 	/// </summary>
 	/// <returns>AsyncSuccess or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// StartCoroutine(drive.Unauthorize());
+	/// </code>
+	/// </example>
 	public IEnumerator Unauthorize()
 	{
 		IsAuthorized = false;
@@ -382,7 +408,9 @@ partial class GoogleDrive
 
 		string authorizationCode = null;
 
-#if !UNITY_EDITOR && UNITY_IPHONE
+#if !UNITY_EDITOR && UNITY_ANDROID
+		Debug.LogError("Android cannot support the authorization code.");
+#elif !UNITY_EDITOR && UNITY_IPHONE
 		#region OPEN WEBVIEW FOR AUTHORIZATION
 		var obj = new GameObject("WebViewObject");
 		var webView = obj.AddComponent<WebViewObject>();

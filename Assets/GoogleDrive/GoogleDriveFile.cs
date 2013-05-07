@@ -10,30 +10,93 @@ partial class GoogleDrive
 	/// <summary>
 	/// File class.
 	/// </summary>
+	/// <example>
+	/// Make a file with data.
+	/// <code>
+	/// var file = new GoogleDrive.File(new Dictionary<string, object>
+	///	{
+	///		{ "title", "text_file.txt" },
+	///		{ "mimeType", "text/plain" },
+	///		{ "description", "This is a text file." }
+	///	});
+	/// </code>
+	/// </example>
 	public class File
 	{
+		/// <summary>
+		/// The ID of the file.
+		/// </summary>
 		public string ID { get; private set; }
 
+		/// <summary>
+		/// File title.
+		/// </summary>
 		public string Title { get; set; }
+
+		/// <summary>
+		/// File MIME type. It must be set.
+		/// </summary>
+		/// <example>
+		/// <para>text/plain: text.</para>
+		/// <para>image/png: PNG image data(binary).</para>
+		/// <para>application/json: JSON string.</para>
+		/// <para>application/octet-stream: Binary data.</para>
+		/// <para>and more.</para>
+		/// </example>
 		public string MimeType { get; set; }
+
+		/// <summary>
+		/// File description. null is default.
+		/// </summary>
 		public string Description { get; set; }
 
+		/// <summary>
+		/// Created date.
+		/// </summary>
 		public DateTime CreatedDate { get; private set; }
+
+		/// <summary>
+		/// Last time this file was modified.
+		/// </summary>
 		public DateTime ModifiedDate { get; private set; }
 
+		/// <summary>
+		/// A link to the file's thumbnail. It can be null.
+		/// </summary>
 		public string ThumbnailLink { get; private set; }
+
+		/// <summary>
+		/// Download URL. It can be null such as folders.
+		/// </summary>
 		public string DownloadUrl { get; private set; }
 
+		/// <summary>
+		/// MD5 Checksum. It can be null.
+		/// </summary>
 		public string MD5Checksum { get; private set; }
+
+		/// <summary>
+		/// The size of the file in bytes. 0 is default(folders or file has no content).
+		/// </summary>
 		public long FileSize { get; private set; }
 
+		/// <summary>
+		/// Parents ID List. If it is empty then the file is in the root folder.
+		/// </summary>
 		public List<string> Parents { get; set; }
 
+		/// <summary>
+		/// Is this file a folder?
+		/// </summary>
 		public bool IsFolder
 		{
 			get { return MimeType == "application/vnd.google-apps.folder"; }
 		}
 
+		/// <summary>
+		/// Make a file with data.
+		/// </summary>
+		/// <param name="metadata">JSON data.</param>
 		public File(Dictionary<string, object> metadata)
 		{
 			ID = TryGet<string>(metadata, "id");
@@ -74,6 +137,10 @@ partial class GoogleDrive
 			}
 		}
 
+		/// <summary>
+		/// Generate JSON data of this file.
+		/// </summary>
+		/// <returns>JSON data.</returns>
 		public Dictionary<string, object> ToJSON()
 		{
 			var json = new Dictionary<string, object>();
@@ -93,6 +160,10 @@ partial class GoogleDrive
 			return json;
 		}
 
+		/// <summary>
+		/// File information.
+		/// </summary>
+		/// <returns>Dump string.</returns>
 		public override string ToString()
 		{
 			return string.Format("{{ title: {0}, mimeType: {1}, fileSize: {2}, id: {3}, parents: [{4}] }}",
@@ -154,6 +225,13 @@ partial class GoogleDrive
 	/// Get all files.
 	/// </summary>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// var listFiles = drive.ListAllFiles();
+	/// yield return StartCoroutine(listFiles);
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// </code>
+	/// </example>
 	public IEnumerator ListAllFiles()
 	{
 		var listFiles = ListFilesByQueary("");
@@ -166,6 +244,14 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="parentFolder">Folder File.</param>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
+	/// <example>
+	/// Get all files in AppData.
+	/// <code>
+	/// var listFiles = drive.ListFiles(drive.AppData);
+	/// yield return StartCoroutine(listFiles);
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// </code>
+	/// </example>
 	public IEnumerator ListFiles(File parentFolder)
 	{
 		var listFiles = ListFilesByQueary(string.Format("'{0}' in parents", parentFolder.ID));
@@ -179,6 +265,17 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="query">Query string.</param>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
+	/// <example>
+	/// Search by title.
+	/// <code>
+	/// var listFiles = drive.ListFilesByQueary("title = 'some_title.txt'");
+	/// yield return StartCoroutine(listFiles);
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// 
+	/// if (files == null || files.Count > 0)
+	///		do something;
+	/// </code>
+	/// </example>
 	public IEnumerator ListFilesByQueary(string query)
 	{
 		#region Check the access token is expired
@@ -235,6 +332,12 @@ partial class GoogleDrive
 	/// Insert a folder to the root folder.
 	/// </summary>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// var insert = drive.InsertFolder("new_folder_in_root");
+	/// yield return StartCoroutine(insert);
+	/// </code>
+	/// </example>
 	public IEnumerator InsertFolder(string title)
 	{
 		var insertFolder = InsertFolder(title, null);
@@ -247,6 +350,12 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="parentFolder">Parent folder.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// var insert = drive.InsertFolder("new_folder_in_appdata", drive.AppData);
+	/// yield return StartCoroutine(insert);
+	/// </code>
+	/// </example>
 	public IEnumerator InsertFolder(string title, File parentFolder)
 	{
 		#region Check the access token is expired
@@ -307,6 +416,20 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">File.</param>
 	/// <returns>AsyncSuccess or Exception for error.</returns>
+	/// <example>
+	/// Delete all files.
+	/// <code>
+	/// var listFiles = drive.ListAllFiles();
+	/// yield return StartCoroutine(listFiles);
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// 
+	/// if (files != null)
+	/// {
+	///		for (int i = 0; i < files.Count; i++)
+	///			yield return StartCoroutine(drive.DeleteFile(files[i]));
+	/// }
+	/// </code>
+	/// </example>
 	public IEnumerator DeleteFile(File file)
 	{
 		#region Check the access token is expired
@@ -348,6 +471,20 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">Updated file.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Rename 'a.txt' to 'b.txt'.
+	/// <code>
+	/// var listFiles = drive.ListFilesByQueary("title = 'a.txt'");
+	/// yield return StartCoroutine(listFiles);
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// 
+	/// if (files == null || files.Count > 0)
+	///	{
+	///		files[0].Title = "b.txt";
+	///		yield return StartCoroutine(drive.UpdateFile(files[0]));
+	///	}
+	/// </code>
+	/// </example>
 	public IEnumerator UpdateFile(File file)
 	{
 		#region Check the access token is expired
@@ -396,6 +533,11 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">File to touch.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// StartCoroutine(drive.TouchFile(someFile));
+	/// </code>
+	/// </example>
 	public IEnumerator TouchFile(File file)
 	{
 		#region Check the access token is expired
@@ -443,6 +585,13 @@ partial class GoogleDrive
 	/// <param name="file">File to duplicate.</param>
 	/// <param name="newTitle">New filename.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Copy a file in the same folder.
+	/// <code>
+	/// string newTitle = someFile.Title + "(2)";
+	/// StartCoroutine(drive.DuplicateFile(someFile, newTitle));
+	/// </code>
+	/// </example>
 	public IEnumerator DuplicateFile(File file, string newTitle)
 	{
 		File newFile = new File(file.ToJSON());
@@ -462,6 +611,12 @@ partial class GoogleDrive
 	///	New parent folder. If it is null then the new file will place in root folder.
 	/// </param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Copy a file to the root folder.
+	/// <code>
+	/// StartCoroutine(drive.DuplicateFile(someFile, someFile.Title, null));
+	/// </code>
+	/// </example>
 	public IEnumerator DuplicateFile(File file, string newTitle, File newParentFolder)
 	{
 		File newFile = new File(file.ToJSON());
@@ -484,6 +639,19 @@ partial class GoogleDrive
 	/// <param name="file">File to duplicate.</param>
 	/// <param name="newFile">New file data.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Copy 'someFile' to 'newFile'.
+	/// <code>
+	/// var newFile = new GoogleDrive.File(new Dictionary<string, object>
+	///	{
+	///		{ "title", someFile.Title + "(2)" },
+	///		{ "mimeType", someFile.MimeType },
+	///	});
+	///	newFile.Parents = new List<string> { newParentFolder.ID };
+	///	
+	/// StartCoroutine(drive.DuplicateFile(someFile, newFile));
+	/// </code>
+	/// </example>
 	IEnumerator DuplicateFile(File file, File newFile)
 	{
 		#region Check the access token is expired
@@ -535,6 +703,12 @@ partial class GoogleDrive
 	/// <param name="mimeType">Content type.</param>
 	/// <param name="data">Data.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// <code>
+	/// var bytes = Encoding.UTF8.GetBytes("world!");
+	/// StartCoroutine(drive.UploadFile("hello.txt", "text/plain", bytes));
+	/// </code>
+	/// </example>
 	public IEnumerator UploadFile(string title, string mimeType, byte[] data)
 	{
 		var upload = UploadFile(title, mimeType, null, data);
@@ -550,6 +724,13 @@ partial class GoogleDrive
 	/// <param name="parentFolder">Parent folder. null is the root folder.</param>
 	/// <param name="data">Data.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Upload a file in AppData.
+	/// <code>
+	/// var bytes = Encoding.UTF8.GetBytes("world!");
+	/// StartCoroutine(drive.UploadFile("hello.txt", "text/plain", drive.AppData, bytes));
+	/// </code>
+	/// </example>
 	public IEnumerator UploadFile(string title, string mimeType, File parentFolder, byte[] data)
 	{
 		File file = new File(new Dictionary<string, object>
@@ -572,6 +753,20 @@ partial class GoogleDrive
 	/// <param name="file">File metadata.</param>
 	/// <param name="data">Data.</param>
 	/// <returns>AsyncSuccess with File or Exception for error.</returns>
+	/// <example>
+	/// Upload a file to the root folder.
+	/// <code>
+	/// var bytes = Encoding.UTF8.GetBytes("world!");
+	/// 
+	/// var file = new GoogleDrive.File(new Dictionary<string, object>
+	///	{
+	///		{ "title", "hello.txt" },
+	///		{ "mimeType", "text/plain" },
+	///	});
+	///	
+	/// StartCoroutine(drive.UploadFile(file, bytes));
+	/// </code>
+	/// </example>
 	public IEnumerator UploadFile(File file, byte[] data)
 	{
 		#region Check the access token is expired
@@ -666,6 +861,17 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">File.</param>
 	/// <returns>AsyncSuccess with byte[] or Exception for error.</returns>
+	/// <example>
+	/// Download a file and print text.
+	/// <code>
+	/// var download = drive.DownloadFile(file);
+	/// yield return StartCoroutine(download);
+	/// 
+	/// var data = GoogleDrive.GetResult<byte[]>(download);
+	/// if (data != null)
+	///		print(System.Text.Encoding.UTF8.GetString(data));
+	/// </code>
+	/// </example>
 	public IEnumerator DownloadFile(File file)
 	{
 		if (file.DownloadUrl == null || file.DownloadUrl == string.Empty)
@@ -684,6 +890,20 @@ partial class GoogleDrive
 	/// </summary>
 	/// <param name="file">Download URL.</param>
 	/// <returns>AsyncSuccess with byte[] or Exception for error.</returns>
+	/// <example>
+	/// Download the thumbnail image.
+	/// <code>
+	/// if (file.ThumbnailLink != null)
+	/// {
+	///		var download = drive.DownloadFile(file.ThumbnailLink);
+	///		yield return StartCoroutine(drive);
+	///		
+	///		var data = GoogleDrive.GetResult<byte[]>(download);
+	///		if (data != null)
+	///			someTexture.LoadImage(data);
+	///	}
+	/// </code>
+	/// </example>
 	public IEnumerator DownloadFile(string url)
 	{
 		#region Check the access token is expired

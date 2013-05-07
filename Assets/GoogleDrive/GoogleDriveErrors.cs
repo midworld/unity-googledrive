@@ -7,10 +7,22 @@ using Midworld;
 
 partial class GoogleDrive
 {
-	class Exception : System.Exception
+	/// <summary>
+	/// Exception with error code.
+	/// </summary>
+	public class Exception : System.Exception
 	{
+		/// <summary>
+		/// <para>Error code. -1 is unknown error.</para>
+		/// <para>https://developers.google.com/drive/handle-errors</para>
+		/// </summary>
 		public int Code { get; private set; }
 
+		/// <summary>
+		/// Constructor.
+		/// </summary>
+		/// <param name="code">Error code.</param>
+		/// <param name="message">Error message.</param>
 		public Exception(int code, string message)
 			: base(message)
 		{

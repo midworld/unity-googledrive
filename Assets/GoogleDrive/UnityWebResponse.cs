@@ -12,6 +12,24 @@ using Ionic.Zlib;
 
 namespace Midworld
 {
+	/// <summary>
+	/// Get HTTP response(Internal)
+	/// </summary>
+	/// <example>
+	/// <code>
+	/// var request = new UnityWebRequest("https://homepage.com");
+	/// request.method = "POST";
+	/// request.headers["Content-Type"] = "application/json";
+	/// request.body = Encoding.UTF8.GetBytes("{\"hello\":\"world\"}");
+	/// 
+	/// var response = new UnityWebResponse(request);
+	/// while (!response.isDone)
+	/// 	yield return null;
+	/// 	
+	/// if (response.error == null)
+	///		print(response.text);
+	/// </code>
+	/// </example>
 	class UnityWebResponse : UnityCoroutine
 	{
 		const int TIMEOUT = 5000;

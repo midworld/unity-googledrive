@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 
 /// <summary>
-/// Unity3D - iOS WebView Object.
+/// Unity3D - iOS WebView Object(Only for iOS).
 /// </summary>
 public class WebViewObject : MonoBehaviour
 {

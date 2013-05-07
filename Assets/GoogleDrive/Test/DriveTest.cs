@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
+/// <summary>
+/// Sample
+/// </summary>
 public class DriveTest : MonoBehaviour
 {
 	public Transform cube = null;
@@ -13,32 +16,6 @@ public class DriveTest : MonoBehaviour
 	void Start()
 	{
 		StartCoroutine(InitGoogleDrive());
-
-		#region ESCAPE
-		//string a = @"title contains '한글'";
-		//byte[] aa = System.Text.Encoding.UTF8.GetBytes(a);
-		//string b = "";
-		//for (int i = 0; i < aa.Length; i++)
-		//{
-		//    char c = (char)aa[i];
-
-		//    if ('a' <= c && c <= 'z' ||
-		//        'A' <= c && c <= 'Z' ||
-		//        '0' <= c && c <= '9')
-		//    {
-		//        b += c;
-		//    }
-		//    else if (c == ' ')
-		//    {
-		//        b += '+';
-		//    }
-		//    else
-		//    {
-		//        b += "%" + aa[i].ToString("x2");
-		//    }
-		//}
-		//Debug.Log(b);
-		#endregion
 	}
 
 	void Update()
@@ -52,6 +29,9 @@ public class DriveTest : MonoBehaviour
 
 	bool initInProgress = false;
 
+	/// <summary>
+	/// Auth and get all files in AppData.
+	/// </summary>
 	IEnumerator InitGoogleDrive()
 	{
 		initInProgress = true;
@@ -105,6 +85,9 @@ public class DriveTest : MonoBehaviour
 
 	bool revokeInProgress = false;
 
+	/// <summary>
+	/// Unauthorize.
+	/// </summary>
 	IEnumerator Revoke()
 	{
 		revokeInProgress = true;
@@ -166,6 +149,9 @@ public class DriveTest : MonoBehaviour
 	GoogleDrive.File file = null;
 	bool uploadScreenshotInProgress = false;
 
+	/// <summary>
+	/// Upload a screenshot to the root folder.
+	/// </summary>
 	IEnumerator UploadScreenshot()
 	{
 		if (drive == null || !drive.IsAuthorized || uploadScreenshotInProgress)
@@ -204,6 +190,10 @@ public class DriveTest : MonoBehaviour
 
 	bool uploadTextInProgress = false;
 
+	/// <summary>
+	/// <para>Update 'my_text.txt' in the root folder.</para>
+	/// <para>The file has json data.</para>
+	/// </summary>
 	IEnumerator UploadText()
 	{
 		if (drive == null || !drive.IsAuthorized || uploadTextInProgress)
@@ -219,7 +209,7 @@ public class DriveTest : MonoBehaviour
 		Dictionary<string, object> data;
 
 		var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(list);
-		
+
 		if (files == null || files.Count > 0)
 		{
 			// Found!

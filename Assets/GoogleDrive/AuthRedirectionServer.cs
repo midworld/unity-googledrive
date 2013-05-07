@@ -7,6 +7,10 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
+#if UNITY_EDITOR || UNITY_STANDALONE
+/// <summary>
+/// Listen server for Google authorization result(Internal)
+/// </summary>
 class AuthRedirectionServer
 {
 	string authorizationCode = null;
@@ -165,3 +169,4 @@ class AuthRedirectionServer
 		}
 	}
 }
+#endif

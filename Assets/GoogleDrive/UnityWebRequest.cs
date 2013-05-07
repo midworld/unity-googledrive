@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Midworld
 {
+	/// <summary>
+	/// HTTP request(Internal)
+	/// </summary>
 	class UnityWebRequest
 	{
 		public string method { get; set; }

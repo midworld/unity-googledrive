@@ -226,6 +226,7 @@ partial class GoogleDrive
 	/// </summary>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
 	/// <example>
+	/// Get all files that you can see.
 	/// <code>
 	/// var listFiles = drive.ListAllFiles();
 	/// yield return StartCoroutine(listFiles);
@@ -245,7 +246,7 @@ partial class GoogleDrive
 	/// <param name="parentFolder">Folder File.</param>
 	/// <returns>AsyncSuccess with List&lt;File&gt; or Exception for error.</returns>
 	/// <example>
-	/// Get all files in AppData.
+	/// Get all files located directly under AppData.
 	/// <code>
 	/// var listFiles = drive.ListFiles(drive.AppData);
 	/// yield return StartCoroutine(listFiles);
@@ -272,7 +273,7 @@ partial class GoogleDrive
 	/// yield return StartCoroutine(listFiles);
 	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 	/// 
-	/// if (files == null || files.Count > 0)
+	/// if (files != null && files.Count > 0)
 	///		do something;
 	/// </code>
 	/// </example>
@@ -478,7 +479,7 @@ partial class GoogleDrive
 	/// yield return StartCoroutine(listFiles);
 	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 	/// 
-	/// if (files == null || files.Count > 0)
+	/// if (files != null && files.Count > 0)
 	///	{
 	///		files[0].Title = "b.txt";
 	///		yield return StartCoroutine(drive.UpdateFile(files[0]));
@@ -765,6 +766,18 @@ partial class GoogleDrive
 	///	});
 	///	
 	/// StartCoroutine(drive.UploadFile(file, bytes));
+	/// </code>
+	/// Update the file content.
+	/// <code>
+	/// var listFiles = drive.ListFilesByQueary("title = 'a.txt'");
+	/// yield return StartCoroutine(listFiles);
+	/// 
+	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
+	/// if (files != null && files.Count > 0)
+	/// {
+	///		var bytes = Encoding.UTF8.GetBytes("new content.");
+	///		StartCoroutine(drive.UploadFile(files[0], bytes));
+	/// }
 	/// </code>
 	/// </example>
 	public IEnumerator UploadFile(File file, byte[] data)

@@ -248,10 +248,22 @@ namespace Midworld
 									} while (true);
 
 									this.bytes = ms.ToArray();
+									ms.Dispose();
 								}
 								else
 								{
-									this.bytes = new byte[0];
+									MemoryStream ms = new MemoryStream(4096);
+									byte[] buffer = new byte[4096];
+									int read = 0;
+
+									do
+									{
+										read = bufferedStream.Read(buffer, 0, buffer.Length);
+										ms.Write(buffer, 0, read);
+									} while (read > 0);
+
+									this.bytes = ms.ToArray();
+									ms.Dispose();
 								}
 
 								cachedText = null;

@@ -111,6 +111,19 @@ class AuthRedirectionServer
 #endif
 						// get auth code
 						string code = s.Substring(0, s.IndexOf("\r\n")).Split(' ')[1];
+						
+						// checking if request has auth code
+						int index = code.IndexOf("/?code=");
+						if (index == -1)
+						{
+							byte[] header404 = Encoding.UTF8.GetBytes(
+							"HTTP/1.1 404 Not Found\r\n" +
+							"\r\n\r\n");
+							stream.Write(header404, 0, header404.Length);
+							break;
+						}
+						// check end
+						
 						code = code.Substring(code.IndexOf("/?code=") + 7);
 
 						AuthorizationCode = code;

@@ -17,12 +17,12 @@ public class WebViewObject : MonoBehaviour
 	/// <summary>
 	/// Authorization code.
 	/// </summary>
-	public string token = null;
+	string token = null;
 
 	/// <summary>
 	/// WebView closed by user touch.
 	/// </summary>
-	public bool cancelled = false;
+	bool cancelled = false;
 
 	IntPtr webView;
 
@@ -41,6 +41,16 @@ public class WebViewObject : MonoBehaviour
 
 		StartCoroutine(CheckTitle());
 	}
+
+  public string GetToken()
+  {
+    return this.token;
+  }
+
+  public string GetCancelled()
+  {
+    return this.cancelled;
+  }
 
 	/// <summary>
 	/// Authorization result will be shown in title.

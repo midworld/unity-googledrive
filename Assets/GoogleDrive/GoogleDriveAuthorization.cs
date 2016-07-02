@@ -416,10 +416,10 @@ partial class GoogleDrive
 		var webView = obj.AddComponent<WebViewObject>();
 		webView.url = AuthorizationURL;
 
-		while (webView.token == null && !webView.cancelled)
+		while (webView.GetToken() == null && !webView.GetCancelled())
 			yield return null;
 
-		if (webView.cancelled)
+		if (webView.GetCancelled())
 		{
 			GameObject.Destroy(obj);
 
@@ -429,7 +429,7 @@ partial class GoogleDrive
 			yield break;
 		}
 
-		authorizationCode = webView.token;
+		authorizationCode = webView.GetToken();
 
 		GameObject.Destroy(obj);
 		#endregion

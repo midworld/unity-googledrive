@@ -28,15 +28,27 @@ partial class GoogleDrive
 		}
 	}
 
+	// default scope
+	static readonly string[] DefaultScopes = new string[]
+	{
+		"https://www.googleapis.com/auth/drive.file",
+		"https://www.googleapis.com/auth/userinfo.email",
+		"https://www.googleapis.com/auth/drive.appdata",
+	};
+	string[] scopes = DefaultScopes;
+
+	public string[] Scopes
+	{
+		set { scopes = (string[])value.Clone(); }
+		get { return scopes; }
+	}
+
 	Uri AuthorizationURL
 	{
 		get
 		{
 			return new Uri("https://accounts.google.com/o/oauth2/auth?" +
-				"scope=" +
-					"https://www.googleapis.com/auth/drive.file" +
-					" https://www.googleapis.com/auth/userinfo.email" +
-					" https://www.googleapis.com/auth/drive.appdata" +
+				"scope=" + string.Join(" ", Scopes) +
 				"&response_type=code" +
 				"&redirect_uri=" + RedirectURI +
 				"&client_id=" + ClientID);

@@ -40,6 +40,12 @@ public class DriveTest : MonoBehaviour
 		drive.ClientID = "897584417662-rnkgkl5tlpnsau7c4oc0g2jp08cpluom.apps.googleusercontent.com";
 		drive.ClientSecret = "tGNLbYnrdRO2hdFmwJAo5Fbt";
 
+		drive.Scopes = new string[] {
+			"https://www.googleapis.com/auth/drive.file",
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/drive.appdata",
+		};
+
 		var authorization = drive.Authorize();
 		yield return StartCoroutine(authorization);
 

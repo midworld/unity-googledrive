@@ -42,14 +42,14 @@ All done!
 Doxygen Docs
 ------------
 
-[here](http://dl.dropboxusercontent.com/u/42560088/UnityGoogleDrive/index.html)
+[here](http://midworld.github.io/unity-googledrive/)
 
 Demo Downloads
 --------------
 
-* Windows Binary: [unitydrivetest_win.zip](http://dl.dropboxusercontent.com/u/42560088/UnityGoogleDrive/unitydrivetest_win.zip)
+* Windows Binary: [unitydrivetest_win.zip](http://midworld.github.io/unity-googledrive/unitydrivetest_win.zip)
 
-* Android APK: [unitydrivetest.apk](http://dl.dropboxusercontent.com/u/42560088/UnityGoogleDrive/unitydrivetest.apk)
+* Android APK: [unitydrivetest.apk](http://midworld.github.io/unity-googledrive/unitydrivetest.apk)
 
 Sample Code
 -----------

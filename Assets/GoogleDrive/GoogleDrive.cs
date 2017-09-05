@@ -114,9 +114,9 @@ partial class GoogleDrive
 	 *
 	 * \subsection step1 Step 1: Enable the Google Drive API
 	 * 
-	 * - PC and iOS: https://developers.google.com/drive/quickstart-ios (Step 1)
+	 * - PC and iOS: https://developers.google.com/drive/v3/web/quickstart/ios (Step 1)
 	 * 
-	 * - Android: https://developers.google.com/drive/quickstart-android (Step 1, 2)
+	 * - Android: https://developers.google.com/drive/v3/web/quickstart/android (Step 1, 2)
 	 *
 	 * \subsection step2 Step 2: Type Your Client ID and Secret to DriveTest.cs.
 	 * 

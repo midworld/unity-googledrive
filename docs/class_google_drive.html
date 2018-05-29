@@ -122,7 +122,7 @@ Public Member Functions</h2></td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Get all files.  <a href="#a2714a0262e9d87b137f84d620ce3be36"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">IEnumerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_google_drive.html#a66a63ef606151a89c79da17aa449ec37">ListFiles</a> (<a class="el" href="class_google_drive_1_1_file.html">File</a> parentFolder)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Get files in a folder with Folder <a class="el" href="class_google_drive_1_1_file.html" title="File class.">File</a>.  <a href="#a66a63ef606151a89c79da17aa449ec37"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">IEnumerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_google_drive.html#aaa1e722c0d9d6580c2657d8e090cb9ef">ListFilesByQueary</a> (string query)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">IEnumerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_google_drive.html#aaa1e722c0d9d6580c2657d8e090cb9ef">ListFilesByQuery</a> (string query)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Get files by a searching query.<a href="https://developers.google.com/drive/search-parameters">https://developers.google.com/drive/search-parameters</a> <a href="#aaa1e722c0d9d6580c2657d8e090cb9ef"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">IEnumerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_google_drive.html#aed7f5ff6fefd28c3c4f9488b3e447228">InsertFolder</a> (string title)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert a folder to the root folder.  <a href="#aed7f5ff6fefd28c3c4f9488b3e447228"></a><br/></td></tr>
@@ -616,12 +616,12 @@ Properties</h2></td></tr>
 </pre></div> 
 </div>
 </div>
-<a class="anchor" id="aaa1e722c0d9d6580c2657d8e090cb9ef"></a><!-- doxytag: member="GoogleDrive::ListFilesByQueary" ref="aaa1e722c0d9d6580c2657d8e090cb9ef" args="(string query)" -->
+<a class="anchor" id="aaa1e722c0d9d6580c2657d8e090cb9ef"></a><!-- doxytag: member="GoogleDrive::ListFilesByQuery" ref="aaa1e722c0d9d6580c2657d8e090cb9ef" args="(string query)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">IEnumerator GoogleDrive.ListFilesByQueary </td>
+          <td class="memname">IEnumerator GoogleDrive.ListFilesByQuery </td>
           <td>(</td>
           <td class="paramtype">string&#160;</td>
           <td class="paramname"><em>query</em></td><td>)</td>
@@ -640,7 +640,7 @@ Properties</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd><a class="el" href="class_google_drive_1_1_async_success.html" title="Success result.">AsyncSuccess</a> with List&lt;<a class="el" href="class_google_drive_1_1_file.html" title="File class.">File</a>&gt; or <a class="el" href="class_google_drive_1_1_exception.html" title="Exception with error code.">Exception</a> for error.</dd></dl>
 <p>Search by title. </p>
-<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQueary(<span class="stringliteral">&quot;title = &#39;some_title.txt&#39;&quot;</span>);
+<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQuery(<span class="stringliteral">&quot;title = &#39;some_title.txt&#39;&quot;</span>);
         yield <span class="keywordflow">return</span> StartCoroutine(listFiles);
         var files = <a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.GetResult&lt;List&lt;<a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.File&gt;&gt;(listFiles);
 
@@ -720,7 +720,7 @@ Properties</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd><a class="el" href="class_google_drive_1_1_async_success.html" title="Success result.">AsyncSuccess</a> with <a class="el" href="class_google_drive_1_1_file.html" title="File class.">File</a> or <a class="el" href="class_google_drive_1_1_exception.html" title="Exception with error code.">Exception</a> for error.</dd></dl>
 <p>Rename 'a.txt' to 'b.txt'. </p>
-<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQueary(<span class="stringliteral">&quot;title = &#39;a.txt&#39;&quot;</span>);
+<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQuery(<span class="stringliteral">&quot;title = &#39;a.txt&#39;&quot;</span>);
         yield <span class="keywordflow">return</span> StartCoroutine(listFiles);
         var files = <a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.GetResult&lt;List&lt;<a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.File&gt;&gt;(listFiles);
 
@@ -877,7 +877,7 @@ Properties</h2></td></tr>
 
         StartCoroutine(drive.UploadFile(file, bytes));
 </pre></div><p> Update the file content. </p>
-<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQueary(<span class="stringliteral">&quot;title = &#39;a.txt&#39;&quot;</span>);
+<div class="fragment"><pre class="fragment">        var listFiles = drive.ListFilesByQuery(<span class="stringliteral">&quot;title = &#39;a.txt&#39;&quot;</span>);
         yield <span class="keywordflow">return</span> StartCoroutine(listFiles);
 
         var files = <a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.GetResult&lt;List&lt;<a class="code" href="class_google_drive.html" title="Google Drive for Unity3D.">GoogleDrive</a>.File&gt;&gt;(listFiles);

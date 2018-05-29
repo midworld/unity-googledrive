@@ -235,7 +235,7 @@ partial class GoogleDrive
 	/// </example>
 	public IEnumerator ListAllFiles()
 	{
-		var listFiles = ListFilesByQueary("");
+		var listFiles = ListFilesByQuery("");
 		while (listFiles.MoveNext())
 			yield return listFiles.Current;
 	}
@@ -255,7 +255,7 @@ partial class GoogleDrive
 	/// </example>
 	public IEnumerator ListFiles(File parentFolder)
 	{
-		var listFiles = ListFilesByQueary(string.Format("'{0}' in parents", parentFolder.ID));
+		var listFiles = ListFilesByQuery(string.Format("'{0}' in parents", parentFolder.ID));
 		while (listFiles.MoveNext())
 			yield return listFiles.Current;
 	}
@@ -269,7 +269,7 @@ partial class GoogleDrive
 	/// <example>
 	/// Search by title.
 	/// <code>
-	/// var listFiles = drive.ListFilesByQueary("title = 'some_title.txt'");
+	/// var listFiles = drive.ListFilesByQuery("title = 'some_title.txt'");
 	/// yield return StartCoroutine(listFiles);
 	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 	/// 
@@ -277,7 +277,7 @@ partial class GoogleDrive
 	///		do something;
 	/// </code>
 	/// </example>
-	public IEnumerator ListFilesByQueary(string query)
+	public IEnumerator ListFilesByQuery(string query)
 	{
 		#region Check the access token is expired
 		var check = CheckExpiration();
@@ -475,7 +475,7 @@ partial class GoogleDrive
 	/// <example>
 	/// Rename 'a.txt' to 'b.txt'.
 	/// <code>
-	/// var listFiles = drive.ListFilesByQueary("title = 'a.txt'");
+	/// var listFiles = drive.ListFilesByQuery("title = 'a.txt'");
 	/// yield return StartCoroutine(listFiles);
 	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);
 	/// 
@@ -769,7 +769,7 @@ partial class GoogleDrive
 	/// </code>
 	/// Update the file content.
 	/// <code>
-	/// var listFiles = drive.ListFilesByQueary("title = 'a.txt'");
+	/// var listFiles = drive.ListFilesByQuery("title = 'a.txt'");
 	/// yield return StartCoroutine(listFiles);
 	/// 
 	/// var files = GoogleDrive.GetResult<List<GoogleDrive.File>>(listFiles);

@@ -208,7 +208,7 @@ public class DriveTest : MonoBehaviour
 		uploadTextInProgress = true;
 
 		// Get 'my_text.txt'.
-		var list = drive.ListFilesByQueary("title = 'my_text.txt'");
+		var list = drive.ListFilesByQuery("title = 'my_text.txt'");
 		yield return StartCoroutine(list);
 
 		GoogleDrive.File file;
